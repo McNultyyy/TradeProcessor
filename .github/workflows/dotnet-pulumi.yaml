@@ -21,7 +21,7 @@ jobs:
       
       - name: Apply infrastructure
         run: |
-          pulumi stack select McNultyyy/Infrastructure/dev
+          pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
           pulumi up --cwd Infrastructure --yes
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
