@@ -5,8 +5,9 @@ jobs:
   setup-infra:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/infrastructure.yml
-      
+      - uses: actions/checkout@v1
+      - uses: ./.github/workflows/infrastructure
+
   build-and-deploy:
     needs: [setup-infra]
     runs-on: ubuntu-latest
