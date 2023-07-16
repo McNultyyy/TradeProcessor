@@ -82,7 +82,7 @@ jobs:
       with:
         app-name: ${{ needs.setup-infra.outputs.appName }}
         publish-profile: ${{ steps.get-publish-profile.outputs.profile }}
-        package: "TradeProcessor.Api./app"
+        package: "TradeProcessor.Api/app"
 
     - name: Reset WebApp/FunctionApp publish profile
       id: reset
