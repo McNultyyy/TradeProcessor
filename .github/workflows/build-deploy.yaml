@@ -42,6 +42,7 @@ jobs:
     needs: [setup-infra]
     runs-on: ubuntu-latest
     steps:
+
     # checkout the repo
     - name: 'Checkout Github Action' 
       uses: actions/checkout
@@ -64,17 +65,6 @@ jobs:
       shell: bash
       run: |
         echo "WebApp: ${{ steps.webapp.outputs.profile }}"
-
-    - name: Reset WebApp/FunctionApp publish profile
-      run: always()
-      id: reset
-      uses: aliencube/publish-profile-actions@v1
-      env:
-        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      with:
-        resourceGroupName: '<RESOURCE_GROUP_NAME>'
-        appName: '<FUNCTIONAPP_NAME>'
-        reset: true
 
     - name: 'Run Azure webapp deploy action using publish profile credentials'
       uses: azure/webapps-deploy@v2
