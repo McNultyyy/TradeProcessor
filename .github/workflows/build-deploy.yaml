@@ -59,22 +59,37 @@ jobs:
       run: |
         az login --service-principal -u ${{ secrets.CLIENT_ID }} -p=${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
 
+
+    - name: dotnet build and publish
+      run: |
+        cd TradeProcessor.Api
+        dotnet restore
+        dotnet build --configuration Release
+        dotnet publish -c Release -o './app'  
+      
     - name: Get WebApp/FunctionApp publish profile
-      id: webapp
+      id: get-publish-profile
       uses: aliencube/publish-profile-actions@v1
       env:
         AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       with:
         resourceGroupName: ${{ needs.setup-infra.outputs.appResourceGroup }}
         appName: ${{ needs.setup-infra.outputs.appName }}
-    
-    - name: Show Profile
-      shell: bash
-      run: |
-        echo "WebApp: ${{ steps.webapp.outputs.profile }}"
 
     - name: 'Run Azure webapp deploy action using publish profile credentials'
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ needs.setup-infra.outputs.appName }}
-        publish-profile: ${{ secrets.azureWebAppPublishProfile }}
+        publish-profile: ${{ steps.get-publish-profile.outputs.profile }}
+        package: "./app"
+
+    - name: Reset WebApp/FunctionApp publish profile
+      id: reset
+      if: ${{ steps.get-publish-profile.conclusion == 'success' }}
+      uses: aliencube/publish-profile-actions@v1
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      with:
+        resourceGroupName: ${{ needs.setup-infra.outputs.appResourceGroup }}
+        appName: ${{ needs.setup-infra.outputs.appName }}
+        reset: true
