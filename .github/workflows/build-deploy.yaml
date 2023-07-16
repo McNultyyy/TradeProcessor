@@ -22,7 +22,7 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
 
       - name: Setup Pulumi
         uses: pulumi/actions@v4
@@ -55,7 +55,7 @@ jobs:
     - name: Azure Login
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        creds: '${{ secrets.AZURE_CREDENTIALS }}'
 
     - name: Get WebApp/FunctionApp publish profile
       id: webapp
