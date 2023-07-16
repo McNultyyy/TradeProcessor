@@ -3,10 +3,40 @@ on: push
 jobs:
 
   setup-infra:
+    name: Update
     runs-on: ubuntu-latest
+
+    outputs:
+      appName: ${{ steps.pulumi.outputs.appName}}
+      appResourceGroup: ${{ steps.pulumi.outputs.appResourceGroup}}
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/infrastructure
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 3.1
+      
+      - name: Setup Pulumi
+        uses: pulumi/actions@v4
+      
+      - name: Apply infrastructure
+        id: pulumi
+        run: |
+          pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
+          pulumi up --cwd Infrastructure --yes
+
+          echo "appName=pulumi stack output AppName -C Infrastructure" >> "$GITHUB_OUTPUT"
+          echo "appResourceGroup=pulumi stack output AppResourceGroup -C Infrastructure" >> "$GITHUB_OUTPUT"
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
   build-and-deploy:
     needs: [setup-infra]
@@ -20,8 +50,34 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 3.1
+
+    - name: Get WebApp/FunctionApp publish profile
+      id: webapp
+      uses: aliencube/publish-profile-actions@v1
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      with:
+        resourceGroupName: ${{ needs.setup-infra.outputs.appResourceGroup }}
+        appName: ${{ needs.setup-infra.outputs.appName }}
+    
+    - name: Show Profile
+      shell: bash
+      run: |
+        echo "WebApp: ${{ steps.webapp.outputs.profile }}"
+
+    - name: Reset WebApp/FunctionApp publish profile
+      run: always()
+      id: reset
+      uses: aliencube/publish-profile-actions@v1
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      with:
+        resourceGroupName: '<RESOURCE_GROUP_NAME>'
+        appName: '<FUNCTIONAPP_NAME>'
+        reset: true
+
     - name: 'Run Azure webapp deploy action using publish profile credentials'
       uses: azure/webapps-deploy@v2
       with:
-        app-name: node-rn
+        app-name: ${{ needs.setup-infra.outputs.appName }}
         publish-profile: ${{ secrets.azureWebAppPublishProfile }}
