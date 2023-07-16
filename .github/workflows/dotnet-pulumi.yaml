@@ -17,6 +17,6 @@ jobs:
           dotnet-version: 3.1
 
       - name: Apply infrastructure2
-        run: pulumi up --cwd .\Infrastructure\ --yes
+        run: pulumi up --cwd Infrastructure --yes
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
