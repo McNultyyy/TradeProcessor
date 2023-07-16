@@ -3,7 +3,7 @@ on: push
 jobs:
 
   setup-infra:
-    uses: ./github/workflows/infrastructure.yml
+    uses: ./github/workflows/infrastructure.yml@main
 
   build-and-deploy:
     needs: [setup-infra]
