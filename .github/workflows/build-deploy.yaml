@@ -3,10 +3,7 @@ on: push
 jobs:
 
   setup-infra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: ./.github/workflows/infrastructure@main
+    uses: ./github/workflows/infrastructure.yml
 
   build-and-deploy:
     needs: [setup-infra]
