@@ -1,15 +1,26 @@
 name: Pulumi
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+        
 jobs:
   up:
     name: Update
     runs-on: ubuntu-latest
+
+    outputs:
+      appName: ${{ steps.pulumi.outputs.appName}}
+      appResourceGroup: ${{ steps.pulumi.outputs.appResourceGroup}}
+
+      
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
@@ -20,8 +31,12 @@ jobs:
         uses: pulumi/actions@v4
       
       - name: Apply infrastructure
+        id: pulumi
         run: |
           pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
           pulumi up --cwd Infrastructure --yes
+
+          echo "appName=pulumi stack output AppName -C Infrastructure" >> "$GITHUB_OUTPUT"
+          echo "appResourceGroup=pulumi stack output AppResourceGroup -C Infrastructure" >> "$GITHUB_OUTPUT"
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

@@ -57,7 +57,13 @@ class AppServiceStack : Stack
         });
 
         this.Endpoint = app.DefaultHostName;
+        this.AppName = app.Name;
+        this.AppResourceGroup = app.ResourceGroup;
     }
 
     [Output] public Output<string> Endpoint { get; set; }
+
+    [Output] public Output<string> AppName { get; set; }
+
+    [Output] public Output<string> AppResourceGroup { get; set; }
 }

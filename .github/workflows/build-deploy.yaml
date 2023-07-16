@@ -1,0 +1,27 @@
+on: push
+
+jobs:
+
+  setup-infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout
+      - uses: .github/workflows/infrastructure
+
+  build-and-deploy:
+    needs: [setup-infra]
+    runs-on: ubuntu-latest
+    steps:
+    # checkout the repo
+    - name: 'Checkout Github Action' 
+      uses: actions/checkout
+
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 3.1
+    - name: 'Run Azure webapp deploy action using publish profile credentials'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: node-rn
+        publish-profile: ${{ secrets.azureWebAppPublishProfile }}
