@@ -65,7 +65,8 @@ jobs:
         cd TradeProcessor.Api
         dotnet restore
         dotnet build --configuration Release
-        dotnet publish -c Release -o './app'  
+        dotnet publish -c Release -o './app'
+        ls -la
       
     - name: Get WebApp/FunctionApp publish profile
       id: get-publish-profile
@@ -81,7 +82,7 @@ jobs:
       with:
         app-name: ${{ needs.setup-infra.outputs.appName }}
         publish-profile: ${{ steps.get-publish-profile.outputs.profile }}
-        package: "./app"
+        package: "TradeProcessor.Api./app"
 
     - name: Reset WebApp/FunctionApp publish profile
       id: reset
