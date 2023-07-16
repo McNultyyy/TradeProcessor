@@ -11,8 +11,6 @@ jobs:
       appName: ${{ steps.pulumi.outputs.appName}}
       appResourceGroup: ${{ steps.pulumi.outputs.appResourceGroup}}
 
-      
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
