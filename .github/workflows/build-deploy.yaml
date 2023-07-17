@@ -3,7 +3,7 @@ on: push
 jobs:
 
   setup-infra:
-    name: Update
+    name: Setup Azure Infrastructure
     runs-on: ubuntu-latest
 
     outputs:
@@ -34,6 +34,7 @@ jobs:
 
           echo "appName=$(pulumi stack output AppName -C Infrastructure)" >> "$GITHUB_OUTPUT"
           echo "appResourceGroup=$(pulumi stack output AppResourceGroup -C Infrastructure)" >> "$GITHUB_OUTPUT"
+          echo "endpoint=$(pulumi stack output Endpoint -C Infrastructure)" >> "$GITHUB_OUTPUT"
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -42,6 +43,7 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
 
   build-and-deploy:
+    name: Build and Deploy app
     needs: [setup-infra]
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +85,20 @@ jobs:
         app-name: ${{ needs.setup-infra.outputs.appName }}
         publish-profile: ${{ steps.get-publish-profile.outputs.profile }}
         package: "TradeProcessor.Api/app"
+
+    - name: Check the deployed service URL
+      uses: jtalk/url-health-check-action@v3
+      with:
+        # Check the following URLs one by one sequentially
+        url:${{ needs.setup-infra.outputs.endpoint }}/healthcheck
+        # Follow redirects, or just report success on 3xx status codes
+        follow-redirect: false # Optional, defaults to "false"
+        # Fail this action after this many failed attempts
+        max-attempts: 3 # Optional, defaults to 1
+        # Delay between retries
+        retry-delay: 5s # Optional, only applicable to max-attempts > 1
+        # Retry all errors, including 404. This option might trigger curl upgrade.
+        retry-all: false # Optional, defaults to "false"
 
     - name: Reset WebApp/FunctionApp publish profile
       id: reset

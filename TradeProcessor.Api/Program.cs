@@ -3,6 +3,7 @@ using Hangfire;
 using Hangfire.Console;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Authorization;
 using TradeProcessor.Api.FvgChaser;
@@ -19,6 +20,7 @@ builder.Services.AddLogging(logging =>
     });
     logging.AddApplicationInsights();
 });
+builder.Services.AddApplicationInsightsTelemetry();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -35,6 +37,8 @@ builder.Services.AddHangfireServer(options =>
 {
 
 });
+
+
 
 builder.Services.AddTransient<FvgChaser>();
 
@@ -66,7 +70,9 @@ builder.Services.AddAuthorization(options =>
 
     options.FallbackPolicy = multiSchemePolicy;
 });
-builder.Services.AddApplicationInsightsTelemetry();
+
+builder.Services.AddHealthChecks()
+    .AddCheck("System", () => HealthCheckResult.Healthy());
 
 var app = builder.Build();
 
@@ -90,6 +96,7 @@ if (app.Environment.IsDevelopment())
             new AllowAllAuthorizationFilter()
         }
     });
+    app.MapHealthChecks("/health");
 }
 
 app.UseAuthentication();
@@ -97,7 +104,10 @@ app.UseAuthorization();
 
 // We want to enable the dashboard after the UseAuthorization call in Production, we will need an API Key
 if (!app.Environment.IsDevelopment())
+{
     app.UseHangfireDashboard("/hangfire");
+    app.MapHealthChecks("/health");
+}
 
 app.MapControllers();
 
