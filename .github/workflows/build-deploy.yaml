@@ -7,6 +7,7 @@ jobs:
     outputs:
       appName: ${{ steps.pulumi.outputs.appName}}
       appResourceGroup: ${{ steps.pulumi.outputs.appResourceGroup}}
+      endpoint: ${{ steps.pulumi.outputs.endpoint}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
