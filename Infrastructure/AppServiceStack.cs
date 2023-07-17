@@ -52,7 +52,8 @@ class AppServiceStack : Stack
                         Name = "ApplicationInsightsAgent_EXTENSION_VERSION",
                         Value = "~2",
                     },
-                }
+                },
+                AlwaysOn = true
             }
         });
 
