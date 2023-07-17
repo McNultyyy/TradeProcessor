@@ -8,6 +8,9 @@ indent_style = space
 max_line_length = 120
 
 
+[*.{editorConfig}]
+max_line_length = 500
+
 # XML project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
 indent_size = 2
