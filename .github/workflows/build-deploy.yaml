@@ -1,37 +1,32 @@
+---
 on: push
-
 jobs:
-
   setup-infra:
     name: Setup Azure Infrastructure
     runs-on: ubuntu-latest
-
     outputs:
       appName: ${{ steps.pulumi.outputs.appName}}
       appResourceGroup: ${{ steps.pulumi.outputs.appResourceGroup}}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 3.1
-      
+          dotnet-version: 3.1     
       - name: Az Login
         run: |
-          az login --service-principal -u ${{ secrets.CLIENT_ID }} -p=${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
-
+          az login --service-principal \
+          -u ${{ secrets.CLIENT_ID }} \
+          -p=${{ secrets.CLIENT_SECRET }} \
+          --tenant ${{ secrets.TENANT_ID }}
       - name: Setup Pulumi
         uses: pulumi/actions@v4
-      
       - name: Apply infrastructure
         id: pulumi
         run: |
           pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
           pulumi up --cwd Infrastructure --yes
-
           echo "appName=$(pulumi stack output AppName -C Infrastructure)" >> "$GITHUB_OUTPUT"
           echo "appResourceGroup=$(pulumi stack output AppResourceGroup -C Infrastructure)" >> "$GITHUB_OUTPUT"
           echo "endpoint=$(pulumi stack output Endpoint -C Infrastructure)" >> "$GITHUB_OUTPUT"
@@ -41,27 +36,23 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
-
   build-and-deploy:
     name: Build and Deploy app
     needs: [setup-infra]
     runs-on: ubuntu-latest
     steps:
-
-    # checkout the repo
     - name: 'Checkout Github Action' 
       uses: actions/checkout@v3
-
     - name: Setup dotnet
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 3.1
-
     - name: Az Login
       run: |
-        az login --service-principal -u ${{ secrets.CLIENT_ID }} -p=${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
-
-
+        az login --service-principal \
+        -u ${{ secrets.CLIENT_ID }} \
+        -p=${{ secrets.CLIENT_SECRET }} \
+        --tenant ${{ secrets.TENANT_ID }}
     - name: dotnet build and publish
       run: |
         cd TradeProcessor.Api
@@ -69,7 +60,6 @@ jobs:
         dotnet build --configuration Release
         dotnet publish -c Release -o './app'
         ls -la
-      
     - name: Get WebApp/FunctionApp publish profile
       id: get-publish-profile
       uses: aliencube/publish-profile-actions@v1.3.0
@@ -78,28 +68,19 @@ jobs:
       with:
         resourceGroupName: ${{ needs.setup-infra.outputs.appResourceGroup }}
         appName: ${{ needs.setup-infra.outputs.appName }}
-
     - name: 'Run Azure webapp deploy action using publish profile credentials'
       uses: azure/webapps-deploy@v2.2.10
       with:
         app-name: ${{ needs.setup-infra.outputs.appName }}
         publish-profile: ${{ steps.get-publish-profile.outputs.profile }}
         package: "TradeProcessor.Api/app"
-
     - name: Check the deployed service URL
       uses: jtalk/url-health-check-action@v3
       with:
-        # Check the following URLs one by one sequentially
-        url:${{ needs.setup-infra.outputs.endpoint }}/healthcheck
-        # Follow redirects, or just report success on 3xx status codes
-        follow-redirect: false # Optional, defaults to "false"
-        # Fail this action after this many failed attempts
-        max-attempts: 3 # Optional, defaults to 1
-        # Delay between retries
-        retry-delay: 5s # Optional, only applicable to max-attempts > 1
-        # Retry all errors, including 404. This option might trigger curl upgrade.
-        retry-all: false # Optional, defaults to "false"
-
+        url: ${{ needs.setup-infra.outputs.endpoint }}/healthcheck
+        max-attempts: 3 
+        retry-delay: 5s 
+        retry-all: false
     - name: Reset WebApp/FunctionApp publish profile
       id: reset
       if: ${{ steps.get-publish-profile.conclusion == 'success' }}
