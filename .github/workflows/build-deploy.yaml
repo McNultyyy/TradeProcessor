@@ -80,6 +80,7 @@ jobs:
       with:
         url: ${{ needs.setup-infra.outputs.endpoint }}/healthcheck
         max-attempts: 1
+        follow-redirect: true
     - name: Reset WebApp/FunctionApp publish profile
       id: reset
       if: ${{ steps.get-publish-profile.conclusion == 'success' }}
