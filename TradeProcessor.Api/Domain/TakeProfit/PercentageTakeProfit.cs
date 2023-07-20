@@ -1,4 +1,4 @@
-﻿namespace TradeProcessor.Api.Domain.Stoploss;
+﻿namespace TradeProcessor.Api.Domain.TakeProfit;
 
 public class PercentageTakeProfit : ITakeProfit
 {
