@@ -55,7 +55,7 @@ class AppServiceStack : Stack
 					},
 				},
 				AlwaysOn = true,
-				NetFrameworkVersion = "net6.0",
+				//NetFrameworkVersion = "net6.0",
 				HealthCheckPath = "/health",
 				MinTlsVersion = "1.2",
 				DetailedErrorLoggingEnabled = true,
