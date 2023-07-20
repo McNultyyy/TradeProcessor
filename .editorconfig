@@ -7,9 +7,8 @@ root = true
 indent_style = tab
 max_line_length = 120
 
-
-[*.{editorconfig}]
-max_line_length = 500
+[.editorconfig]
+max_line_length = unset
 
 # XML project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
@@ -150,6 +149,7 @@ csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
 csharp_style_prefer_tuple_swap = true:suggestion
 csharp_style_prefer_utf8_string_literals = true:suggestion
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
+csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 ###############################
 # VB Coding Conventions       #
 ###############################
