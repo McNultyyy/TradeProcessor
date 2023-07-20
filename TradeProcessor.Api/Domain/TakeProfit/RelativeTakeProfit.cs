@@ -1,4 +1,4 @@
-﻿namespace TradeProcessor.Api.FvgChaser.TakeProfit;
+﻿namespace TradeProcessor.Api.Domain.Stoploss;
 
 public class RelativeTakeProfit : ITakeProfit
 {
@@ -9,7 +9,7 @@ public class RelativeTakeProfit : ITakeProfit
     public RelativeTakeProfit(decimal entryPrice, decimal offset, bool isBullish)
     {
         _entryPrice = entryPrice;
-        _offset = offset;
+        _offset = offset; //todo: should we Math.Abs this
         _isBullish = isBullish;
     }
 

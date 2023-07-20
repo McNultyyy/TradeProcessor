@@ -1,6 +1,6 @@
 using AspNetCore.Authentication.ApiKey;
 using TradeProcessor.Api.Authentication;
-using TradeProcessor.Api.FvgChaser;
+using TradeProcessor.Api.Domain;
 
 namespace TradeProcessor.Api.Contracts;
 

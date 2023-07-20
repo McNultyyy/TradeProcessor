@@ -1,11 +1,13 @@
-using Bybit.Net.Clients;
+﻿using Bybit.Net.Clients;
 using Bybit.Net.Enums;
 using CryptoExchange.Net.Authentication;
 using Hangfire.Server;
 using OneOf;
 using System.ComponentModel;
 using TradeProcessor.Api.Contracts;
-using TradeProcessor.Api.FvgChaser.TakeProfit;
+using TradeProcessor.Api.Domain;
+using TradeProcessor.Api.Domain.Stoploss;
+using TradeProcessor.Api.Domain.TakeProfit;
 using TradeProcessor.Api.Logging;
 
 namespace TradeProcessor.Api.FvgChaser;
@@ -22,7 +24,7 @@ public class FvgChaser
     public FvgChaser(ILogger<FvgChaser> logger, IConfiguration configuration)
     {
         _logger = logger;
-        
+
         var apiCredentials = new ApiCredentials(
             configuration["Bybit:Key"],
             configuration["Bybit:Secret"]);
@@ -195,15 +197,13 @@ public class FvgChaser
         _performContextLogger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
         var takeProfitStrategy = GetTakeProfit(limitPrice, request);
+        _performContextLogger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
+        var takeProfit = takeProfitStrategy?.Result() ?? null;
 
-        _performContextLogger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy.Value.ToString());
+        var stoplossStrategy = GetStoploss(limitPrice, request);
+        _performContextLogger.LogInformation("Using StoplossStrategy: {takeProfitStrategy}", stoplossStrategy?.GetType().ToString());
+        var stoploss = stoplossStrategy?.Result() ?? null;
 
-        var takeProfit = takeProfitStrategy?.Match(
-            _ => _.Result(),
-            _ => _.Result(),
-            _ => _.Result(),
-            _ => _.Result()
-        ) ?? null;
 
         var orderResult = await _restclient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
             request.Symbol,
@@ -258,11 +258,9 @@ public class FvgChaser
         return false;
     }
 
-    private OneOf<
-        StaticTakeProfit,
-        PercentageTakeProfit,
-        RiskRewardTakeProfit,
-        RelativeTakeProfit>? GetTakeProfit(decimal entryPrice, FvgChaserRequest request)
+
+
+    private ITakeProfit? GetTakeProfit(decimal entryPrice, FvgChaserRequest request)
     {
         var takeProfit = request.TakeProfit;
 
@@ -295,6 +293,34 @@ public class FvgChaser
         }
 
         return new StaticTakeProfit(decimal.Parse(takeProfit));
+    }
+
+
+    private IStoploss? GetStoploss(decimal entryPrice, FvgChaserRequest request)
+    {
+        var stoploss = request.TakeProfit;
+
+        if (stoploss is null)
+            return null;
+
+        if (stoploss.Contains("+") || stoploss.Contains("-"))
+        {
+            var tpString = stoploss
+                .Replace("+", "")
+                .Replace("-", "");
+
+            return new RelativeStoploss(entryPrice, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
+        }
+
+        if (stoploss.Contains("%"))
+        {
+            var tpString = stoploss
+                .Replace("%", "");
+
+            return new PercentageStoploss(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+        }
+
+        return new StaticStoploss(decimal.Parse(stoploss));
     }
 
 

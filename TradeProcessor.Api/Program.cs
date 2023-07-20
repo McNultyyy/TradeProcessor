@@ -1,4 +1,4 @@
-using AspNetCore.Authentication.ApiKey;
+﻿using AspNetCore.Authentication.ApiKey;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.Dashboard;
@@ -111,9 +111,4 @@ if (!app.Environment.IsDevelopment())
 
 app.MapControllers();
 
-
 app.Run();
-
-namespace TradeProcessor.Api
-{
-}

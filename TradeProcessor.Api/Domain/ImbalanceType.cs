@@ -1,4 +1,4 @@
-namespace TradeProcessor.Api.FvgChaser;
+namespace TradeProcessor.Api.Domain;
 
 public enum ImbalanceType
 {

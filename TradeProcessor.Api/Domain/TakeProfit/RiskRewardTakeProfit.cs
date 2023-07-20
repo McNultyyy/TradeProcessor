@@ -1,4 +1,6 @@
-﻿namespace TradeProcessor.Api.FvgChaser.TakeProfit;
+﻿using TradeProcessor.Api.Domain.Stoploss;
+
+namespace TradeProcessor.Api.Domain.TakeProfit;
 
 public class RiskRewardTakeProfit : ITakeProfit
 {
