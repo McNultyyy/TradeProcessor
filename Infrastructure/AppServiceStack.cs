@@ -10,61 +10,68 @@ namespace Infrastructure;
 
 class AppServiceStack : Stack
 {
-    public AppServiceStack()
-    {
-        var resourceGroup = new ResourceGroup("TradeProcessor-rg");
+	public AppServiceStack()
+	{
+		var resourceGroup = new ResourceGroup("TradeProcessor-rg");
 
-        var appServicePlan = new AppServicePlan("TradeProcessor-sp", new AppServicePlanArgs
-        {
-            ResourceGroupName = resourceGroup.Name,
-            Kind = "App",
-            Sku = new SkuDescriptionArgs
-            {
-                Tier = "Standard",
-                Name = "S1",
-            },
-        });
+		var appServicePlan = new AppServicePlan("TradeProcessor-sp", new AppServicePlanArgs
+		{
+			ResourceGroupName = resourceGroup.Name,
+			Kind = "App",
+			Sku = new SkuDescriptionArgs
+			{
+				Tier = "Standard",
+				Name = "S1",
+			},
+		});
 
-        var appInsights = new Component("appInsights", new ComponentArgs
-        {
-            ApplicationType = "web",
-            Kind = "web",
-            ResourceGroupName = resourceGroup.Name,
-            IngestionMode = IngestionMode.ApplicationInsights
-        });
+		var appInsights = new Component("appInsights", new ComponentArgs
+		{
+			ResourceName = "TradeProcessor-ai",
+			ApplicationType = "web",
+			Kind = "web",
+			ResourceGroupName = resourceGroup.Name,
+			IngestionMode = IngestionMode.ApplicationInsights
+		});
 
-        var app = new WebApp("TradeProcessorApi", new WebAppArgs
-        {
-            ResourceGroupName = resourceGroup.Name,
-            ServerFarmId = appServicePlan.Id,
-            SiteConfig = new SiteConfigArgs
-            {
-                AppSettings = {
-                    new NameValuePairArgs{
-                        Name = "APPINSIGHTS_INSTRUMENTATIONKEY",
-                        Value = appInsights.InstrumentationKey
-                    },
-                    new NameValuePairArgs{
-                        Name = "APPLICATIONINSIGHTS_CONNECTION_STRING",
-                        Value = appInsights.InstrumentationKey.Apply(key => $"InstrumentationKey={key}"),
-                    },
-                    new NameValuePairArgs{
-                        Name = "ApplicationInsightsAgent_EXTENSION_VERSION",
-                        Value = "~2",
-                    },
-                },
-                AlwaysOn = true
-            }
-        });
+		var app = new WebApp("TradeProcessorApi", new WebAppArgs
+		{
+			ResourceGroupName = resourceGroup.Name,
+			ServerFarmId = appServicePlan.Id,
+			SiteConfig = new SiteConfigArgs
+			{
+				AppSettings = {
+					new NameValuePairArgs{
+						Name = "APPINSIGHTS_INSTRUMENTATIONKEY",
+						Value = appInsights.InstrumentationKey
+					},
+					new NameValuePairArgs{
+						Name = "APPLICATIONINSIGHTS_CONNECTION_STRING",
+						Value = appInsights.InstrumentationKey.Apply(key => $"InstrumentationKey={key}"),
+					},
+					new NameValuePairArgs{
+						Name = "ApplicationInsightsAgent_EXTENSION_VERSION",
+						Value = "~2",
+					},
+				},
+				AlwaysOn = true,
+				NetFrameworkVersion = "net6.0",
+				HealthCheckPath = "/health",
+				MinTlsVersion = "1.2",
+				DetailedErrorLoggingEnabled = true,
+				HttpLoggingEnabled = true,
+				RequestTracingEnabled = true
+			}
+		});
 
-        this.Endpoint = app.DefaultHostName;
-        this.AppName = app.Name;
-        this.AppResourceGroup = app.ResourceGroup;
-    }
+		this.Endpoint = app.DefaultHostName;
+		this.AppName = app.Name;
+		this.AppResourceGroup = app.ResourceGroup;
+	}
 
-    [Output] public Output<string> Endpoint { get; set; }
+	[Output] public Output<string> Endpoint { get; set; }
 
-    [Output] public Output<string> AppName { get; set; }
+	[Output] public Output<string> AppName { get; set; }
 
-    [Output] public Output<string> AppResourceGroup { get; set; }
+	[Output] public Output<string> AppResourceGroup { get; set; }
 }
