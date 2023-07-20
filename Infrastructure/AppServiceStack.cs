@@ -34,7 +34,7 @@ class AppServiceStack : Stack
 			IngestionMode = IngestionMode.ApplicationInsights
 		});
 
-		var app = new WebApp("TradeProcessorApi", new WebAppArgs
+		var app = new WebApp("TradeProcessor-api", new WebAppArgs
 		{
 			ResourceGroupName = resourceGroup.Name,
 			ServerFarmId = appServicePlan.Id,
@@ -52,7 +52,7 @@ class AppServiceStack : Stack
 					new NameValuePairArgs{
 						Name = "ApplicationInsightsAgent_EXTENSION_VERSION",
 						Value = "~2",
-					},
+					}
 				},
 				AlwaysOn = true,
 				//NetFrameworkVersion = "net6.0",
@@ -61,7 +61,7 @@ class AppServiceStack : Stack
 				DetailedErrorLoggingEnabled = true,
 				HttpLoggingEnabled = true,
 				RequestTracingEnabled = true
-			}
+			},
 		});
 
 		this.Endpoint = app.DefaultHostName;

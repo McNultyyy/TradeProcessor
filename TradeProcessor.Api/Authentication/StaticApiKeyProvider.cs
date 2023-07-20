@@ -1,4 +1,4 @@
-using AspNetCore.Authentication.ApiKey;
+﻿using AspNetCore.Authentication.ApiKey;
 
 namespace TradeProcessor.Api.Authentication;
 
@@ -8,7 +8,7 @@ public class StaticApiKeyProvider : IApiKeyProvider
 
     public StaticApiKeyProvider(IConfiguration configuration)
     {
-        _allowedKeys = configuration.GetSection("ApiKeys").Get<IList<string>>();
+        _allowedKeys = configuration.GetRequiredSection("ApiKeys").Get<IList<string>>();
     }
 
     public async Task<IApiKey> ProvideAsync(string key)

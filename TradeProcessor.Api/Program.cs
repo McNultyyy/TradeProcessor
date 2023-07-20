@@ -39,7 +39,6 @@ builder.Services.AddHangfireServer(options =>
 });
 
 
-
 builder.Services.AddTransient<FvgChaser>();
 
 builder.Services.AddAuthentication()
