@@ -1,7 +1,8 @@
 ﻿using FluentAssertions;
 using TradeProcessor.Api.Domain;
+using TradeProcessor.Api.Domain.Candles;
 
-namespace TradeProcessor.Api.Tests
+namespace TradeProcessor.Api.Tests.ThreeCandleTests
 {
 	public class ThreeCandleTests
 	{
@@ -14,7 +15,7 @@ namespace TradeProcessor.Api.Tests
 
 			var threeCandles = new ThreeCandles(previousPrevious, previous, current);
 
-			var expectedImbalance = new Imbalance(28, 26, ImbalanceType.Bearish);
+			var expectedImbalance = new Imbalance(28, 26, BiasType.Bearish, GapType.Price);
 
 			threeCandles.TryFindImbalance(out var imbalance);
 
@@ -30,7 +31,7 @@ namespace TradeProcessor.Api.Tests
 
 			var threeCandles = new ThreeCandles(previousPrevious, previous, current);
 
-			var expectedImbalance = new Imbalance(30057, 30013, ImbalanceType.Bearish);
+			var expectedImbalance = new Imbalance(30057, 30013, BiasType.Bearish, GapType.Price);
 
 			threeCandles.TryFindImbalance(out var imbalance);
 
@@ -46,7 +47,7 @@ namespace TradeProcessor.Api.Tests
 
 			var threeCandles = new ThreeCandles(previousPrevious, previous, current);
 
-			var expectedImbalance = new Imbalance(29814, 29786, ImbalanceType.Bearish);
+			var expectedImbalance = new Imbalance(29814, 29786, BiasType.Bearish, GapType.Price);
 
 			threeCandles.TryFindImbalance(out var imbalance);
 
@@ -62,7 +63,7 @@ namespace TradeProcessor.Api.Tests
 
 			var fvg = new ThreeCandles(previousPrevious, previous, current);
 
-			var expectedImbalance = new Imbalance(1.736m, 1.733m, ImbalanceType.Bullish);
+			var expectedImbalance = new Imbalance(1.736m, 1.733m, BiasType.Bullish, GapType.Price);
 
 			fvg.TryFindImbalance(out var imbalance);
 

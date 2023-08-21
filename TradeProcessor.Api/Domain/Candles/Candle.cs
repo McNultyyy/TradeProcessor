@@ -1,4 +1,4 @@
-﻿namespace TradeProcessor.Api.Domain;
+﻿namespace TradeProcessor.Api.Domain.Candles;
 
 public record Candle(decimal Open, decimal High, decimal Low, decimal Close)
 {

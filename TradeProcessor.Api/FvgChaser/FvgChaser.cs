@@ -9,6 +9,7 @@ using TradeProcessor.Api.Domain;
 using TradeProcessor.Api.Domain.Stoploss;
 using TradeProcessor.Api.Domain.TakeProfit;
 using TradeProcessor.Api.Logging;
+using TradeProcessor.Api.Domain.Candles;
 
 namespace TradeProcessor.Api.FvgChaser;
 
@@ -34,20 +35,16 @@ public class FvgChaser
 	public async Task DoWork(string symbol,
 		string interval,
 		decimal riskPerTrade,
-		decimal? maxNumberOfTrades,
 		string stoploss,
 		string? takeProfit,
-		ImbalanceType bias,
+		BiasType bias,
 		PerformContext context)
 	{
-		// The PerformContext object is inject automatically by the Hangfire library
-		// see: https://github.com/pieceofsummer/Hangfire.Console#log
-
 		_performContextLogger = new PerformContextLogger<FvgChaser>(context, _logger);
 
 		await DoWork(
 			new FvgChaserRequest(
-				symbol, interval, riskPerTrade, maxNumberOfTrades, stoploss, takeProfit, bias));
+				symbol, interval, riskPerTrade, stoploss, takeProfit, bias));
 	}
 
 	private async Task DoWork(FvgChaserRequest request)
@@ -132,9 +129,9 @@ public class FvgChaser
 								{
 									_performContextLogger.LogInformation($"Found imbalance: [{imbalance}]");
 
-									if (imbalance.ImbalanceType == request.Bias)
+									if (imbalance.BiasType == request.Bias)
 									{
-										var limitPrice = imbalance.ImbalanceType == ImbalanceType.Bullish
+										var limitPrice = imbalance.BiasType == BiasType.Bullish
 											? imbalance.High
 											: imbalance.Low;
 
@@ -232,12 +229,12 @@ public class FvgChaser
 
 		var orderResult = await _restclient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
 			request.Symbol,
-			request.Bias == ImbalanceType.Bullish ? OrderSide.Buy : OrderSide.Sell,
+			request.Bias == BiasType.Bullish ? OrderSide.Buy : OrderSide.Sell,
 			OrderType.Limit,
 			quantity,
 			TimeInForce.GoodTillCanceled,
 			price: limitPrice,
-			positionMode: PositionMode.OneWay, //request.Bias == ImbalanceType.Bullish ? PositionMode.OneWay : PositionMode.BothSideSell,
+			positionMode: PositionMode.OneWay, //request.Bias == BiasType.Bullish ? PositionMode.OneWay : PositionMode.BothSideSell,
 			takeProfitPrice: takeProfit
 		);
 
@@ -274,7 +271,7 @@ public class FvgChaser
 				.Replace("-", "")
 				.Replace("%", "");
 
-			return new PercentageTakeProfit(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+			return new PercentageTakeProfit(decimal.Parse(tpString), entryPrice, request.Bias == BiasType.Bullish);
 		}
 
 		if (takeProfit.Contains("+") || takeProfit.Contains("-"))
@@ -283,7 +280,7 @@ public class FvgChaser
 				.Replace("+", "")
 				.Replace("-", "");
 
-			return new RelativeTakeProfit(entryPrice, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
+			return new RelativeTakeProfit(entryPrice, decimal.Parse(tpString), request.Bias == BiasType.Bullish);
 		}
 
 		if (takeProfit.Contains("R", StringComparison.InvariantCultureIgnoreCase))
@@ -291,7 +288,7 @@ public class FvgChaser
 			var tpString = takeProfit
 				.Replace("R", "");
 
-			return new RiskRewardTakeProfit(entryPrice, stoploss, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
+			return new RiskRewardTakeProfit(entryPrice, stoploss, decimal.Parse(tpString), request.Bias == BiasType.Bullish);
 		}
 
 		return new StaticTakeProfit(decimal.Parse(takeProfit));
@@ -312,7 +309,7 @@ public class FvgChaser
 				.Replace("+", "")
 				.Replace("-", "");
 
-			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, request.Bias == BiasType.Bullish);
 		}
 
 		if (stoploss.Contains("+") || stoploss.Contains("-"))
@@ -321,7 +318,7 @@ public class FvgChaser
 				.Replace("+", "")
 				.Replace("-", "");
 
-			return new RelativeStoploss(entryPrice, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
+			return new RelativeStoploss(entryPrice, decimal.Parse(tpString), request.Bias == BiasType.Bullish);
 		}
 
 		return new StaticStoploss(decimal.Parse(stoploss));

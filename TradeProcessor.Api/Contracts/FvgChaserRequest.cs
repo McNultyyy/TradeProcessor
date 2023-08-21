@@ -8,10 +8,9 @@ public record FvgChaserRequest(
     string Symbol,
     string Interval,
     decimal RiskPerTrade,
-    decimal? MaxNumberOfTrades,
     string Stoploss,
     string? TakeProfit, // only the formatted string
-    ImbalanceType Bias) : IApiKeyProperty
+    BiasType Bias) : IApiKeyProperty
 {
     public string ApiKey { get; set; }
 }
