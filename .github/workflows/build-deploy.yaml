@@ -78,7 +78,7 @@ jobs:
     - name: Check the deployed service URL
       uses: jtalk/url-health-check-action@v3
       with:
-        url: ${{ needs.setup-infra.outputs.endpoint }}/healthcheck
+        url: ${{ needs.setup-infra.outputs.endpoint }}/health
         max-attempts: 1
         follow-redirect: true
     - name: Reset WebApp/FunctionApp publish profile
