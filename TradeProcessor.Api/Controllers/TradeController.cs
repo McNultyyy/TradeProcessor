@@ -1,4 +1,4 @@
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using TradeProcessor.Api.Contracts;
 
@@ -8,15 +8,11 @@ namespace TradeProcessor.Api.Controllers
     [Route("[controller]")]
     public class TradeController : ControllerBase
     {
+	    private readonly FvgChaser.FvgChaser _fvgChaser;
 
-        private readonly ILogger<TradeController> _logger;
-
-        private readonly FvgChaser.FvgChaser _fvgChaser;
-
-        public TradeController(ILogger<TradeController> logger, FvgChaser.FvgChaser fvgChaser)
+        public TradeController(FvgChaser.FvgChaser fvgChaser)
         {
-            _logger = logger;
-            _fvgChaser = fvgChaser;
+	        _fvgChaser = fvgChaser;
         }
 
         [HttpPost(Name = "FvgChaser")]

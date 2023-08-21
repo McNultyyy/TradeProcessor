@@ -9,5 +9,13 @@
 					func2(instance)
 					);
 		}
+
+		public static void Apply<T>(this T instance, params Action<T>[] actions)
+		{
+			foreach (var action in actions)
+			{
+				action(instance);
+			}
+		}
 	}
 }

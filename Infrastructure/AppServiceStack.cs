@@ -5,8 +5,35 @@ using Pulumi.AzureNative.Insights;
 using Pulumi.AzureNative.Resources;
 using Pulumi.AzureNative.Web;
 using Pulumi.AzureNative.Web.Inputs;
+using Pulumi.Experimental.Provider;
+using ResourceArgs = Pulumi.ResourceArgs;
 
 namespace Infrastructure;
+
+/*
+class TelegramBotProvider : Provider
+{
+
+}
+
+class TelegramBotResourceArgs : ResourceArgs
+{
+	[Input("token")]
+	public Input<string>? Token { get; set; }
+
+
+	[Input("setWebhookUrl")]
+	public Input<string>? SetWebhookUrl { get; set; }
+
+}
+class TelegramBotResource : CustomResource
+{
+	public TelegramBotResource(TelegramBotResourceArgs args) : base("telegram:bot", "Telegram Bot", args)
+	{
+		
+	}
+}
+*/
 
 class AppServiceStack : Stack
 {
@@ -24,6 +51,7 @@ class AppServiceStack : Stack
 				Name = "S1",
 			},
 		});
+
 
 		var appInsights = new Component("appInsights", new ComponentArgs
 		{

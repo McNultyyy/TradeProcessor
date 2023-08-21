@@ -2,8 +2,8 @@
 using Bybit.Net.Enums;
 using CryptoExchange.Net.Authentication;
 using Hangfire.Server;
-using OneOf;
 using System.ComponentModel;
+using Bybit.Net.Interfaces.Clients;
 using TradeProcessor.Api.Contracts;
 using TradeProcessor.Api.Domain;
 using TradeProcessor.Api.Domain.Stoploss;
@@ -14,56 +14,43 @@ namespace TradeProcessor.Api.FvgChaser;
 
 public class FvgChaser
 {
-	private BybitSocketClient _socketClient;
-	private BybitRestClient _restclient;
+	private readonly IBybitSocketClient _socketClient;
+	private readonly IBybitRestClient _restclient;
 
-	private ILogger<FvgChaser> _logger;
+	private readonly ILogger<FvgChaser> _logger;
 
 	private PerformContextLogger<FvgChaser> _performContextLogger;
 
-	public FvgChaser(ILogger<FvgChaser> logger, IConfiguration configuration)
+	public FvgChaser(ILogger<FvgChaser> logger, IBybitSocketClient socketClient, IBybitRestClient restClient)
 	{
 		_logger = logger;
 
-		var (key, secret) = configuration
-			.GetRequiredSection("Bybit")
-			.GetTuple(
-				x => x["Key"],
-				x => x["Secret"]);
-
-		var apiCredentials = new ApiCredentials(key, secret);
-
-		_socketClient = new BybitSocketClient(opts =>
-		{
-			opts.DerivativesPublicOptions.ApiCredentials = apiCredentials;
-		});
-
-		_restclient = new BybitRestClient(otps =>
-		{
-			otps.DerivativesOptions.ApiCredentials = apiCredentials;
-		});
+		_socketClient = socketClient;
+		_restclient = restClient;
 	}
 
+	// {Bias} {Symbol} {Interval}
 	[DisplayName("{6} {0} {1}")]
 	public async Task DoWork(string symbol,
 		string interval,
 		decimal riskPerTrade,
 		decimal? maxNumberOfTrades,
-		decimal stoploss,
+		string stoploss,
 		string? takeProfit,
 		ImbalanceType bias,
 		PerformContext context)
 	{
-		// note: The PerformContext object is inject automatically by the Hangfire library
+		// The PerformContext object is inject automatically by the Hangfire library
+		// see: https://github.com/pieceofsummer/Hangfire.Console#log
 
 		_performContextLogger = new PerformContextLogger<FvgChaser>(context, _logger);
 
 		await DoWork(
 			new FvgChaserRequest(
-				symbol, interval, riskPerTrade, maxNumberOfTrades, stoploss, takeProfit, bias), context);
+				symbol, interval, riskPerTrade, maxNumberOfTrades, stoploss, takeProfit, bias));
 	}
 
-	private async Task DoWork(FvgChaserRequest request, PerformContext context)
+	private async Task DoWork(FvgChaserRequest request)
 	{
 		_logger.LogInformation("Received request: {request}", request);
 
@@ -72,9 +59,17 @@ public class FvgChaser
 
 		var interval = MapToKlineInterval(request.Interval);
 
-		while (true)
-		{
-			await _socketClient
+		var symbol = request.Symbol;
+
+		symbol = CleanSymbol(symbol);
+
+		request = request with { Symbol = symbol };
+
+		/* TODO: Come up with a better way of tracking the existing WS connections, and reconnect if possible??
+		// await _socketClient.DerivativesApi.UnsubscribeAllAsync();
+
+		*/
+		var result = await _socketClient
 				.DerivativesApi
 				.SubscribeToKlineUpdatesAsync(StreamDerivativesCategory.USDTPerp, request.Symbol, interval,
 					async updates =>
@@ -118,7 +113,6 @@ public class FvgChaser
 									current = candle;
 									candleCount = 1;
 
-
 									_performContextLogger.LogInformation("Loaded first candle...");
 								}
 							}
@@ -133,8 +127,8 @@ public class FvgChaser
 								previous is not null &&
 								current is not null)
 							{
-								Imbalance imbalance;
-								if (TryFindImbalance(current, previous, previousPrevious, out imbalance))
+								var threeCandles = new ThreeCandles(previousPrevious, previous, current);
+								if (threeCandles.TryFindImbalance(out var imbalance))
 								{
 									_performContextLogger.LogInformation($"Found imbalance: [{imbalance}]");
 
@@ -154,7 +148,34 @@ public class FvgChaser
 							}
 						}
 					});
+
+
+		while (true)
+		{
+			/*
+			 * We want to keep this instance alive so that we can:
+			 *  1. Stop the job, if necessary, via the Hangfire UI.
+			 *  2. So that the REST and Socket clients do not get disposed.
+			 */
 		}
+
+	}
+
+	private string CleanSymbol(string symbol)
+	{
+		if (symbol.Contains(".P"))
+		{
+			symbol = symbol.Replace(".P", string.Empty);
+			_performContextLogger.LogInformation("Removed .P from the symbol.");
+		}
+
+		if (symbol.Contains("BYBIT:"))
+		{
+			symbol = symbol.Replace("BYBIT:", String.Empty);
+			_performContextLogger.LogInformation("Removed BYBIT: from the symbol");
+		}
+
+		return symbol;
 	}
 
 	private KlineInterval MapToKlineInterval(string requestInterval)
@@ -194,20 +215,20 @@ public class FvgChaser
 
 	async Task PlaceLimitOrder(FvgChaserRequest request, decimal limitPrice)
 	{
-
-		var quantity = //0.025m;
-			Math.Round(request.RiskPerTrade / Math.Abs(limitPrice - request.Stoploss), 3);
-
 		_performContextLogger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
+
+		var stoplossStrategy = GetStoploss(limitPrice, request);
+		_performContextLogger.LogInformation("Using StoplossStrategy: {stopLossStrategy}", stoplossStrategy?.GetType().ToString());
+		var stoploss = stoplossStrategy?.Result();
 
 		var takeProfitStrategy = GetTakeProfit(limitPrice, request);
 		_performContextLogger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
 		var takeProfit = takeProfitStrategy?.Result() ?? null;
 
-		var stoplossStrategy = GetStoploss(limitPrice, request);
-		_performContextLogger.LogInformation("Using StoplossStrategy: {takeProfitStrategy}", stoplossStrategy?.GetType().ToString());
-		var stoploss = stoplossStrategy?.Result() ?? null;
-
+		var quantity =
+			Math.Round(
+				request.RiskPerTrade / Math.Abs(limitPrice - stoploss.Value),
+				3);
 
 		var orderResult = await _restclient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
 			request.Symbol,
@@ -216,14 +237,14 @@ public class FvgChaser
 			quantity,
 			TimeInForce.GoodTillCanceled,
 			price: limitPrice,
-			positionMode: request.Bias == ImbalanceType.Bullish ? PositionMode.BothSideBuy : PositionMode.BothSideSell,
+			positionMode: PositionMode.OneWay, //request.Bias == ImbalanceType.Bullish ? PositionMode.OneWay : PositionMode.BothSideSell,
 			takeProfitPrice: takeProfit
 		);
 
 		if (!orderResult.Success)
 		{
 
-			_performContextLogger.LogError("Order failed with {error}", orderResult.Error.Message);
+			_performContextLogger.LogError("Order failed with {error}", orderResult.Error?.Message);
 		}
 		else
 		{
@@ -231,45 +252,30 @@ public class FvgChaser
 		}
 	}
 
-	bool TryFindImbalance(Candle current, Candle previous, Candle previousPrevious, out Imbalance imbalance)
-	{
-
-		if (//previous.IsBearishCandle())
-			new[] { current, previous, previousPrevious }.All(x => x.IsBearishCandle()))  // all 3 bearish
-																						  //        || previousPrevious.IsBearishCandle() && previous.IsBearishCandle() && current.IsBullishCandle()) // first 2 bearish, last is bullish
-		{
-			if (current.High < previousPrevious.Low)
-			{
-				imbalance = new Imbalance(previousPrevious.Low, current.High, ImbalanceType.Bearish);
-				return true;
-			}
-		}
-
-		// all 3 bullish
-		if (
-				//previous.IsBullishCandle())
-				new[] { current, previous, previousPrevious }.All(x => x.IsBullishCandle()))
-		// || previousPrevious.IsBullishCandle() && previous.IsBullishCandle() && current.IsBearishCandle())) // first 2 bullish, last is bearish
-		{
-			if (current.Low > previousPrevious.High)
-			{
-				imbalance = new Imbalance(current.Low, previousPrevious.High, ImbalanceType.Bullish);
-				return true;
-			}
-		}
-
-		imbalance = null;
-		return false;
-	}
-
-
 
 	private ITakeProfit? GetTakeProfit(decimal entryPrice, FvgChaserRequest request)
 	{
+		// TODO: just pass in the stoploss rather than calculate it again
+
+		var stoplossStrategy = GetStoploss(entryPrice, request);
+		var stoploss = (decimal)stoplossStrategy?.Result();
+
+		//////////////
+
 		var takeProfit = request.TakeProfit;
 
 		if (takeProfit is null)
 			return null;
+
+		if (takeProfit.Contains("%"))
+		{
+			var tpString = takeProfit
+				.Replace("+", "")
+				.Replace("-", "")
+				.Replace("%", "");
+
+			return new PercentageTakeProfit(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+		}
 
 		if (takeProfit.Contains("+") || takeProfit.Contains("-"))
 		{
@@ -285,49 +291,39 @@ public class FvgChaser
 			var tpString = takeProfit
 				.Replace("R", "");
 
-			return new RiskRewardTakeProfit(entryPrice, request.Stoploss, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
-		}
-
-		if (takeProfit.Contains("%"))
-		{
-			var tpString = takeProfit
-				.Replace("%", "");
-
-			return new PercentageTakeProfit(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+			return new RiskRewardTakeProfit(entryPrice, stoploss, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
 		}
 
 		return new StaticTakeProfit(decimal.Parse(takeProfit));
 	}
 
-
 	private IStoploss? GetStoploss(decimal entryPrice, FvgChaserRequest request)
 	{
-		var stoploss = request.TakeProfit;
+		var stoploss = request.Stoploss;
 
 		if (stoploss is null)
 			return null;
 
+		string? tpString;
+		if (stoploss.Contains("%"))
+		{
+			tpString = stoploss
+				.Replace("%", "")
+				.Replace("+", "")
+				.Replace("-", "");
+
+			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
+		}
+
 		if (stoploss.Contains("+") || stoploss.Contains("-"))
 		{
-			var tpString = stoploss
+			tpString = stoploss
 				.Replace("+", "")
 				.Replace("-", "");
 
 			return new RelativeStoploss(entryPrice, decimal.Parse(tpString), request.Bias == ImbalanceType.Bullish);
 		}
 
-		if (stoploss.Contains("%"))
-		{
-			var tpString = stoploss
-				.Replace("%", "");
-
-			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, request.Bias == ImbalanceType.Bullish);
-		}
-
 		return new StaticStoploss(decimal.Parse(stoploss));
 	}
-
-
-
-
 }

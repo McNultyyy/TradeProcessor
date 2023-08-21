@@ -52,5 +52,22 @@ namespace TradeProcessor.Api.Tests
 
 			imbalance.Should().Be(expectedImbalance);
 		}
+
+		[Fact]
+		public void AdHocTest()
+		{
+			var previousPrevious = new Candle(1.733, 1.733, 1.732, 1.733);
+			var previous = new Candle(1.733, 1.736, 1.731, 1.736);
+			var current = new Candle(1.736, 1.737, 1.736, 1.736);
+
+			var fvg = new ThreeCandles(previousPrevious, previous, current);
+
+			var expectedImbalance = new Imbalance(1.736m, 1.733m, ImbalanceType.Bullish);
+
+			fvg.TryFindImbalance(out var imbalance);
+
+			imbalance.Should().Be(expectedImbalance);
+
+		}
 	}
 }

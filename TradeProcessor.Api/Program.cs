@@ -1,12 +1,18 @@
-﻿using AspNetCore.Authentication.ApiKey;
+﻿using System.Text.Json;
+using System.Text;
+using System.Text.Json.Serialization;
+using AspNetCore.Authentication.ApiKey;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Authorization;
+using TradeProcessor.Api.DependencyInjection;
 using TradeProcessor.Api.FvgChaser;
+using TradeProcessor.Api.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +28,10 @@ builder.Services.AddLogging(logging =>
 });
 builder.Services.AddApplicationInsightsTelemetry();
 
-builder.Services.AddControllers();
+builder.Services
+	.AddControllers()
+	.AddJsonOptions(x => x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -42,12 +51,12 @@ builder.Services.AddHangfireServer(options =>
 builder.Services.AddTransient<FvgChaser>();
 
 builder.Services.AddAuthentication()
-	.AddApiKeyInHeader<StaticApiKeyProvider>("ApiKeyInHeader", x =>
+	.AddApiKeyInHeader<StaticApiKeyProvider>(AuthenticationSchemes.ApiKeyInHeader, x =>
 	{
 		x.KeyName = "X-API-KEY";
 		x.Realm = "Trade Processor";
 	})
-	.AddApiKeyInQueryParams<StaticApiKeyProvider>("ApiKeyInQuery", x =>
+	.AddApiKeyInQueryParams<StaticApiKeyProvider>(AuthenticationSchemes.ApiKeyInQuery, x =>
 	{
 		x.KeyName = "apiKey";
 		x.Realm = "Trade Processor";
@@ -64,14 +73,16 @@ builder.Services.AddAuthorization(options =>
 			"ApiKeyInRequest"
 		)
 		.RequireAuthenticatedUser()
-		.RequireAuthenticatedUser()
 		.Build();
 
 	options.FallbackPolicy = multiSchemePolicy;
 });
 
+builder.Services.AddBybit(builder.Configuration);
+
 builder.Services.AddHealthChecks()
-	.AddCheck("System", () => HealthCheckResult.Healthy());
+	.AddCheck("System", () => HealthCheckResult.Healthy())
+	.AddCheck<BybitHealthCheck>("Bybit");
 
 var app = builder.Build();
 
@@ -84,30 +95,64 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
-// In Local development we don't want to both with a Authorization
-if (app.Environment.IsDevelopment())
+/*
+ * Configuring Hangfire Dashboard and Healthchecks are intentionally before the AuthN and AuthZ configuration.
+ */
+app.UseHangfireDashboard("/hangfire", new DashboardOptions()
 {
-	app.UseHangfireDashboard("/hangfire", new DashboardOptions()
+	Authorization = new List<IDashboardAuthorizationFilter>()
 	{
-		Authorization = new List<IDashboardAuthorizationFilter>()
-		{
-			new AllowAllAuthorizationFilter()
-		}
-	});
-}
+		new AllowAllAuthorizationFilter()
+	}
+});
 
-// before auth
-app.MapHealthChecks("/health");
+app.UseHealthChecks("/health", new HealthCheckOptions()
+{
+	ResponseWriter = ((context, healthReport) =>
+	{
+		context.Response.ContentType = "application/json; charset=utf-8";
+
+		var options = new JsonWriterOptions { Indented = true };
+
+		using var memoryStream = new MemoryStream();
+		using (var jsonWriter = new Utf8JsonWriter(memoryStream, options))
+		{
+			jsonWriter.WriteStartObject();
+			jsonWriter.WriteString("status", healthReport.Status.ToString());
+			jsonWriter.WriteStartObject("results");
+
+			foreach (var healthReportEntry in healthReport.Entries)
+			{
+				jsonWriter.WriteStartObject(healthReportEntry.Key);
+				jsonWriter.WriteString("status",
+					healthReportEntry.Value.Status.ToString());
+				jsonWriter.WriteString("description",
+					healthReportEntry.Value.Description);
+				jsonWriter.WriteStartObject("data");
+
+				foreach (var item in healthReportEntry.Value.Data)
+				{
+					jsonWriter.WritePropertyName(item.Key);
+
+					JsonSerializer.Serialize(jsonWriter, item.Value,
+						item.Value?.GetType() ?? typeof(object));
+				}
+
+				jsonWriter.WriteEndObject();
+				jsonWriter.WriteEndObject();
+			}
+
+			jsonWriter.WriteEndObject();
+			jsonWriter.WriteEndObject();
+		}
+
+		return context.Response.WriteAsync(
+			Encoding.UTF8.GetString(memoryStream.ToArray()));
+	})
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-// We want to enable the dashboard after the UseAuthorization call in Production, we will need an API Key
-if (!app.Environment.IsDevelopment())
-{
-	app.UseHangfireDashboard("/hangfire");
-}
 
 app.MapControllers();
 

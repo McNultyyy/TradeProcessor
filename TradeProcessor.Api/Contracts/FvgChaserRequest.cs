@@ -1,4 +1,4 @@
-using AspNetCore.Authentication.ApiKey;
+﻿using AspNetCore.Authentication.ApiKey;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Domain;
 
@@ -9,7 +9,7 @@ public record FvgChaserRequest(
     string Interval,
     decimal RiskPerTrade,
     decimal? MaxNumberOfTrades,
-    decimal Stoploss,
+    string Stoploss,
     string? TakeProfit, // only the formatted string
     ImbalanceType Bias) : IApiKeyProperty
 {
