@@ -1,6 +1,8 @@
-﻿using Hangfire;
+﻿using System.ComponentModel;
+using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using TradeProcessor.Api.Contracts;
+using TradeProcessor.Domain;
 
 namespace TradeProcessor.Api.Controllers
 {
@@ -8,9 +10,9 @@ namespace TradeProcessor.Api.Controllers
 	[Route("[controller]")]
 	public class TradeController : ControllerBase
 	{
-		private readonly TradeProcessor.Domain.Services.FvgChaser _fvgChaser;
+		private readonly Domain.Services.FvgChaser _fvgChaser;
 
-		public TradeController(TradeProcessor.Domain.Services.FvgChaser fvgChaser)
+		public TradeController(Domain.Services.FvgChaser fvgChaser)
 		{
 			_fvgChaser = fvgChaser;
 		}
@@ -20,6 +22,7 @@ namespace TradeProcessor.Api.Controllers
 		{
 			BackgroundJob
 				.Enqueue(() =>
+
 					_fvgChaser.DoWork(
 						request.Symbol,
 						request.Interval,
@@ -27,13 +30,35 @@ namespace TradeProcessor.Api.Controllers
 						request.Stoploss,
 						request.TakeProfit,
 						request.Bias
-						/*
-						// The PerformContext object is inject automatically by the Hangfire library see: https://github.com/pieceofsummer/Hangfire.Console#log
-						null!
-						*/
-						));
+						)
+
+					/*
+					Execute(
+						request.Symbol,
+						request.Interval,
+						request.RiskPerTrade,
+						request.Stoploss,
+						request.TakeProfit,
+						request.Bias,
+						_fvgChaser
+					)*/
+					);
 
 			return Ok();
+		}
+
+		// todo: workout why this doesn't work :/
+		[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
+		public static void Execute(
+			string symbol,
+			string interval,
+			decimal riskPerTrade,
+			string stoploss,
+			string? takeProfit,
+			BiasType bias,
+			Domain.Services.FvgChaser service)
+		{
+			service.DoWork(symbol, interval, riskPerTrade, stoploss, takeProfit, bias);
 		}
 	}
 }

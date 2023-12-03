@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.ComponentModel;
+using Microsoft.Extensions.Logging;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 using TradeProcessor.Domain.Helpers;

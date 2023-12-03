@@ -36,7 +36,6 @@
 
   <ItemGroup>
     <Folder Include="Examples\" />
-    <Folder Include="Healthcheck\" />
   </ItemGroup>
 
   <ItemGroup>

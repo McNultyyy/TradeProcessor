@@ -1,10 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using Bybit.Net;
+﻿using Bybit.Net;
 using CryptoExchange.Net.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
-using Microsoft.Extensions.Http.Logging;
 using Microsoft.Extensions.Logging;
 using OKX.Api;
 using OKX.Api.Authentication;

@@ -10,7 +10,6 @@ using Swashbuckle.AspNetCore.Filters;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Authorization;
 using TradeProcessor.Api.Examples;
-using TradeProcessor.Api.FvgChaser;
 using TradeProcessor.Api.Healthcheck;
 using TradeProcessor.Core;
 using TradeProcessor.Infrastructure.HealthChecks;
@@ -38,8 +37,6 @@ builder.Services.AddHangfireServer(options =>
 {
 
 });
-
-
 
 builder.Services.AddAuthentication()
 	.AddApiKeyInHeader<StaticApiKeyProvider>(AuthenticationSchemes.ApiKeyInHeader, x =>
@@ -70,7 +67,6 @@ builder.Services.AddAuthorization(options =>
 
 	options.FallbackPolicy = multiSchemePolicy;
 });
-
 
 builder.Services.AddTradeProcessorCore(builder.Configuration);
 
