@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using TradeProcessor.Api.Domain;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 
