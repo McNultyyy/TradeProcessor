@@ -1,3 +1,4 @@
+---
 on: push
 jobs:
   setup-infra:
@@ -25,7 +26,7 @@ jobs:
       - name: Apply infrastructure
         id: pulumi
         run: |
-		  pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
+          pulumi stack select McNultyyy/Infrastructure/dev --cwd Infrastructure
           pulumi up --cwd Infrastructure --yes
           echo "appName=$(pulumi stack output AppName -C Infrastructure)" >> "$GITHUB_OUTPUT"
           echo "appResourceGroup=$(pulumi stack output AppResourceGroup -C Infrastructure)" >> "$GITHUB_OUTPUT"
