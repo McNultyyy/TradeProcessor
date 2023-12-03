@@ -45,3 +45,5 @@ msbuild.wrn
 *.Development.json
 
 Properties
+
+*.db

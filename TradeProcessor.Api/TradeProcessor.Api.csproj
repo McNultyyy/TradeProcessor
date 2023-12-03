@@ -11,20 +11,36 @@
 
   <ItemGroup>
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="7.0.0" />
-    <PackageReference Include="Bybit.Net" Version="3.0.0" />
+
     <PackageReference Include="DynamicBinder" Version="2.0.0" />
+
+    <PackageReference Include="FluentResults" Version="3.15.2" />
+
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.3" />
     <PackageReference Include="Hangfire.Console" Version="1.4.2" />
     <PackageReference Include="Hangfire.Dashboard.Authorization" Version="3.0.1" />
     <PackageReference Include="Hangfire.InMemory" Version="0.5.1" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.3" />
+
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.20" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
+    
     <PackageReference Include="OneOf" Version="3.0.255" />
+
     <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Examples\" />
+    <Folder Include="Healthcheck\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\TradeProcessor.Core.csproj" />
   </ItemGroup>
 
 </Project>

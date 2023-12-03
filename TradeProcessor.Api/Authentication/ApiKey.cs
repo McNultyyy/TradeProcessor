@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using AspNetCore.Authentication.ApiKey;
 
 namespace TradeProcessor.Api.Authentication;

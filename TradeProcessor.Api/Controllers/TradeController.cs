@@ -8,9 +8,9 @@ namespace TradeProcessor.Api.Controllers
 	[Route("[controller]")]
 	public class TradeController : ControllerBase
 	{
-		private readonly FvgChaser.FvgChaser _fvgChaser;
+		private readonly TradeProcessor.Domain.Services.FvgChaser _fvgChaser;
 
-		public TradeController(FvgChaser.FvgChaser fvgChaser)
+		public TradeController(TradeProcessor.Domain.Services.FvgChaser fvgChaser)
 		{
 			_fvgChaser = fvgChaser;
 		}
@@ -26,11 +26,11 @@ namespace TradeProcessor.Api.Controllers
 						request.RiskPerTrade,
 						request.Stoploss,
 						request.TakeProfit,
-						request.Bias,
-
+						request.Bias
+						/*
 						// The PerformContext object is inject automatically by the Hangfire library see: https://github.com/pieceofsummer/Hangfire.Console#log
 						null!
-						
+						*/
 						));
 
 			return Ok();

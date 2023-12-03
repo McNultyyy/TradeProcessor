@@ -1,33 +1,28 @@
-﻿using Bybit.Net.Clients;
-using Bybit.Net.Enums;
-using CryptoExchange.Net.Authentication;
-using Hangfire.Server;
+﻿using Hangfire.Server;
 using System.ComponentModel;
-using Bybit.Net.Interfaces.Clients;
 using TradeProcessor.Api.Contracts;
-using TradeProcessor.Api.Domain;
-using TradeProcessor.Api.Domain.Stoploss;
-using TradeProcessor.Api.Domain.TakeProfit;
 using TradeProcessor.Api.Logging;
-using TradeProcessor.Api.Domain.Candles;
+using TradeProcessor.Domain.Exchange;
 
 namespace TradeProcessor.Api.FvgChaser;
 
+/*
+
+//todo: more to domain services
 public class FvgChaser
 {
-	private readonly IBybitSocketClient _socketClient;
-	private readonly IBybitRestClient _restclient;
+	private IExchangeRestClient _exchangeRestClient;
+	private IExchangeSocketClient _exchangeSocketClient;
 
 	private readonly ILogger<FvgChaser> _logger;
 
 	private PerformContextLogger<FvgChaser> _performContextLogger;
 
-	public FvgChaser(ILogger<FvgChaser> logger, IBybitSocketClient socketClient, IBybitRestClient restClient)
+	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient)
 	{
 		_logger = logger;
-
-		_socketClient = socketClient;
-		_restclient = restClient;
+		_exchangeRestClient = exchangeRestClient;
+		_exchangeSocketClient = exchangeSocketClient;
 	}
 
 	// {Bias} {Symbol} {Interval}
@@ -51,112 +46,80 @@ public class FvgChaser
 	{
 		_logger.LogInformation("Received request: {request}", request);
 
-		Candle current = null, previous = null, previousPrevious = null;
 		int candleCount = 0;
 
-		var interval = MapToKlineInterval(request.Interval);
+		var interval = TimeHelper.IntervalStringToTimeSpan(request.Interval);
 
 		var symbol = request.Symbol;
 
+		// todo: we should be doing this earlier
 		symbol = CleanSymbol(symbol);
 
 		request = request with { Symbol = symbol };
 
-		/* TODO: Come up with a better way of tracking the existing WS connections, and reconnect if possible??
-		// await _socketClient.DerivativesApi.UnsubscribeAllAsync();
+		var now = DateTime.UtcNow;
+		var dateFromFourTimeUnitsAgo = now - (4 * (interval.TotalSeconds) * TimeSpan.FromSeconds(1));
+		var lastCandles = (await _exchangeRestClient.GetCandles(
+			symbol,
+			TimeHelper.IntervalStringToTimeSpan(request.Interval),
+			dateFromFourTimeUnitsAgo,
+			now))
+			.Value
+			.ToList();
 
-		*/
-		var result = await _socketClient
-				.DerivativesApi
-				.SubscribeToKlineUpdatesAsync(StreamDerivativesCategory.USDTPerp, request.Symbol, interval,
-					async updates =>
+		var (previousPrevious, previous, current) = (lastCandles[^1], lastCandles[^2], lastCandles[^3]);
+
+		await _exchangeSocketClient.Subscribe(request.Symbol, TimeHelper.IntervalStringToTimeSpan(request.Interval),
+			async candle =>
+			{
+				{
+					previousPrevious = previous with { };
+					previous = current with { };
+					current = candle with { };
+
+					var threeCandles = new ThreeCandles(previousPrevious, previous, current);
+					if (threeCandles.TryFindImbalances(out var imbalances))
 					{
-						var data = updates.Data.First();
 
-						var candle = new Candle(data.OpenPrice, data.HighPrice, data.LowPrice, data.ClosePrice);
+						_performContextLogger.LogInformation("Found {imbalanceCount} imbalances.",
+							imbalances.Count());
 
-						if (data.Confirm)
+						foreach (var foundImbalance in imbalances)
 						{
-							if (candleCount != 3)
+							_performContextLogger.LogInformation("Found imbalance: {imbalance}.",
+								foundImbalance);
+						}
+
+
+						var imbalance = imbalances.FirstOrDefault(x => x.GapType == GapType.Price);
+						if (imbalance is not null)
+						{
+							if (imbalance.BiasType == request.Bias)
 							{
-								// Initialise the first 3 candles
+								var limitPrice = imbalance.BiasType == BiasType.Bullish
+									? imbalance.High
+									: imbalance.Low;
 
-								//third pass
-								if (previousPrevious is null && candleCount == 2)
-								{
-									previousPrevious = previous with { };
-									previous = current with { };
-									current = candle with { };
-									candleCount = 3;
-
-									_performContextLogger.LogInformation("Loaded all 3 candles...");
-									_performContextLogger.LogInformation("FVG strategy started");
-								}
-
-								// second pass
-								if (previous is null && candleCount == 1)
-								{
-									previous = current with { };
-									current = candle with { };
-									candleCount = 2;
-
-
-									_performContextLogger.LogInformation("Loaded second candle...");
-								}
-
-								// first pass
-								if (current is null)
-								{
-									current = candle;
-									candleCount = 1;
-
-									_performContextLogger.LogInformation("Loaded first candle...");
-								}
+								await PlaceLimitOrder(request, limitPrice);
 							}
 							else
 							{
-								previousPrevious = previous with { };
-								previous = current with { };
-								current = candle with { };
-							}
-
-							if (previousPrevious is not null &&
-								previous is not null &&
-								current is not null)
-							{
-								var threeCandles = new ThreeCandles(previousPrevious, previous, current);
-								if (threeCandles.TryFindImbalance(out var imbalance))
-								{
-									_performContextLogger.LogInformation($"Found imbalance: [{imbalance}]");
-
-									if (imbalance.BiasType == request.Bias)
-									{
-										var limitPrice = imbalance.BiasType == BiasType.Bullish
-											? imbalance.High
-											: imbalance.Low;
-
-										await PlaceLimitOrder(request, limitPrice);
-									}
-									else
-									{
-										_performContextLogger.LogInformation("Imbalance is not in the direction of bias - Ignored.");
-									}
-								}
+								_performContextLogger.LogInformation(
+									"Imbalance is not in the direction of bias - Ignored.");
 							}
 						}
-					});
+						else
+						{
+							_performContextLogger.LogInformation(
+								$"Ignoring non-{nameof(GapType.Price)} imbalance.");
+						}
 
 
-		while (true)
-		{
-			/*
-			 * We want to keep this instance alive so that we can:
-			 *  1. Stop the job, if necessary, via the Hangfire UI.
-			 *  2. So that the REST and Socket clients do not get disposed.
-			 */
-		}
-
+					}
+				}
+			});
 	}
+
 
 	private string CleanSymbol(string symbol)
 	{
@@ -175,41 +138,6 @@ public class FvgChaser
 		return symbol;
 	}
 
-	private KlineInterval MapToKlineInterval(string requestInterval)
-	{
-		if (requestInterval.Contains("m"))
-		{
-			requestInterval = requestInterval.Replace("m", "");
-			var integer = Int32.Parse(requestInterval);
-
-			var integerInSeconds = integer * 60;
-
-			return (KlineInterval)integerInSeconds;
-		}
-
-		if (requestInterval.Contains("H", StringComparison.InvariantCultureIgnoreCase))
-		{
-			requestInterval = requestInterval.Replace("H", "");
-			var integer = Int32.Parse(requestInterval);
-
-			var integerInSeconds = integer * 60 * 60;
-
-			return (KlineInterval)integerInSeconds;
-		}
-
-		if (requestInterval.Contains("D"))
-		{
-			requestInterval = requestInterval.Replace("D", "");
-			var integer = Int32.Parse(requestInterval);
-
-			var integerInSeconds = integer * 60 * 60 * 24;
-
-			return (KlineInterval)integerInSeconds;
-		}
-
-		throw new ArgumentException($"Cannot parse {requestInterval}", nameof(requestInterval));
-	}
-
 	async Task PlaceLimitOrder(FvgChaserRequest request, decimal limitPrice)
 	{
 		_performContextLogger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
@@ -225,23 +153,19 @@ public class FvgChaser
 		var quantity =
 			Math.Round(
 				request.RiskPerTrade / Math.Abs(limitPrice - stoploss.Value),
-				3);
+				3); //todo: why is this 3?
 
-		var orderResult = await _restclient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
+		var orderResult = await _exchangeRestClient.PlaceOrder(
 			request.Symbol,
-			request.Bias == BiasType.Bullish ? OrderSide.Buy : OrderSide.Sell,
-			OrderType.Limit,
+			request.Bias,
 			quantity,
-			TimeInForce.GoodTillCanceled,
-			price: limitPrice,
-			positionMode: PositionMode.OneWay, //request.Bias == BiasType.Bullish ? PositionMode.OneWay : PositionMode.BothSideSell,
-			takeProfitPrice: takeProfit
+			limitPrice,
+			takeProfit
 		);
 
-		if (!orderResult.Success)
+		if (orderResult.IsFailed)
 		{
-
-			_performContextLogger.LogError("Order failed with {error}", orderResult.Error?.Message);
+			_performContextLogger.LogError("Order failed with {error}", orderResult.Errors.First().Message);
 		}
 		else
 		{
@@ -324,3 +248,4 @@ public class FvgChaser
 		return new StaticStoploss(decimal.Parse(stoploss));
 	}
 }
+*/

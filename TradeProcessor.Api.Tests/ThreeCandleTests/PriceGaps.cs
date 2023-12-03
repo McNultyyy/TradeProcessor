@@ -1,6 +1,8 @@
 ﻿using FluentAssertions;
+using FluentAssertions.Execution;
 using TradeProcessor.Api.Domain;
-using TradeProcessor.Api.Domain.Candles;
+using TradeProcessor.Domain;
+using TradeProcessor.Domain.Candles;
 
 namespace TradeProcessor.Api.Tests.ThreeCandleTests
 {
@@ -17,9 +19,9 @@ namespace TradeProcessor.Api.Tests.ThreeCandleTests
 
 			var expectedImbalance = new Imbalance(28, 26, BiasType.Bearish, GapType.Price);
 
-			threeCandles.TryFindImbalance(out var imbalance);
+			threeCandles.TryFindImbalances(out var imbalance);
 
-			imbalance.Should().Be(expectedImbalance);
+			imbalance.Should().Contain(expectedImbalance);
 		}
 
 		[Fact]
@@ -33,9 +35,9 @@ namespace TradeProcessor.Api.Tests.ThreeCandleTests
 
 			var expectedImbalance = new Imbalance(30057, 30013, BiasType.Bearish, GapType.Price);
 
-			threeCandles.TryFindImbalance(out var imbalance);
+			threeCandles.TryFindImbalances(out var imbalance);
 
-			imbalance.Should().Be(expectedImbalance);
+			imbalance.Should().Contain(expectedImbalance);
 		}
 
 		[Fact]
@@ -49,9 +51,9 @@ namespace TradeProcessor.Api.Tests.ThreeCandleTests
 
 			var expectedImbalance = new Imbalance(29814, 29786, BiasType.Bearish, GapType.Price);
 
-			threeCandles.TryFindImbalance(out var imbalance);
+			threeCandles.TryFindImbalances(out var imbalance);
 
-			imbalance.Should().Be(expectedImbalance);
+			imbalance.Should().Contain(expectedImbalance);
 		}
 
 		[Fact]
@@ -65,10 +67,31 @@ namespace TradeProcessor.Api.Tests.ThreeCandleTests
 
 			var expectedImbalance = new Imbalance(1.736m, 1.733m, BiasType.Bullish, GapType.Price);
 
-			fvg.TryFindImbalance(out var imbalance);
+			fvg.TryFindImbalances(out var imbalance);
 
-			imbalance.Should().Be(expectedImbalance);
+			imbalance.Should().Contain(expectedImbalance);
 
+		}
+
+		[Fact]
+		public void MultipleGapTest()
+		{
+			var previousPrevious = new Candle(27840, 27955, 27810, 27855);
+			var previous = new Candle(27855, 27900, 27485, 27620);
+			var current = new Candle(26475, 26925, 25925, 26850);
+
+			var fvg = new ThreeCandles(previousPrevious, previous, current);
+
+
+			fvg.TryFindImbalances(out var imbalances);
+
+
+			using (new AssertionScope())
+			{
+				imbalances.Should().Match(x => x.Any(y => y.GapType == GapType.Liquidity));
+				imbalances.Should().Match(x => x.Any(y => y.GapType == GapType.Volume));
+				imbalances.Should().Match(x => x.Any(y => y.GapType == GapType.Price));
+			}
 		}
 	}
 }

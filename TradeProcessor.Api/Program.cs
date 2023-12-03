@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using AspNetCore.Authentication.ApiKey;
 using Hangfire;
 using Hangfire.Console;
@@ -8,33 +6,27 @@ using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Swashbuckle.AspNetCore.Filters;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Authorization;
-using TradeProcessor.Api.DependencyInjection;
+using TradeProcessor.Api.Examples;
 using TradeProcessor.Api.FvgChaser;
-using TradeProcessor.Api.HealthChecks;
+using TradeProcessor.Api.Healthcheck;
+using TradeProcessor.Core;
+using TradeProcessor.Infrastructure.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddLogging(logging =>
-{
-	logging.ClearProviders();
-
-	logging.AddConsole(opts =>
-	{
-		opts.IncludeScopes = true;
-	});
-	logging.AddApplicationInsights();
-});
-builder.Services.AddApplicationInsightsTelemetry();
 
 builder.Services
 	.AddControllers()
 	.AddJsonOptions(x => x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+	options.ExampleFilters();
+});
+builder.Services.AddSwaggerExamplesFromAssemblies(typeof(ExampleFvgChaserRequest).Assembly);
 
 builder.Services.AddHangfire(x =>
 {
@@ -48,7 +40,6 @@ builder.Services.AddHangfireServer(options =>
 });
 
 
-builder.Services.AddTransient<FvgChaser>();
 
 builder.Services.AddAuthentication()
 	.AddApiKeyInHeader<StaticApiKeyProvider>(AuthenticationSchemes.ApiKeyInHeader, x =>
@@ -64,25 +55,29 @@ builder.Services.AddAuthentication()
 	.AddApiKeyInRequestBody<StaticApiKeyProvider>()
 	;
 
-
 builder.Services.AddAuthorization(options =>
 {
-	var multiSchemePolicy = new AuthorizationPolicyBuilder(
-			"ApiKeyInHeader",
-			"ApiKeyInQuery",
-			"ApiKeyInRequest"
-		)
+	var authenticationSchemes = new[]
+	{
+		AuthenticationSchemes.ApiKeyInHeader,
+		AuthenticationSchemes.ApiKeyInQuery,
+		AuthenticationSchemes.ApiKeyInRequest
+	};
+
+	var multiSchemePolicy = new AuthorizationPolicyBuilder(authenticationSchemes)
 		.RequireAuthenticatedUser()
 		.Build();
 
 	options.FallbackPolicy = multiSchemePolicy;
 });
 
-builder.Services.AddBybit(builder.Configuration);
+
+builder.Services.AddTradeProcessorCore(builder.Configuration);
 
 builder.Services.AddHealthChecks()
 	.AddCheck("System", () => HealthCheckResult.Healthy())
-	.AddCheck<BybitHealthCheck>("Bybit");
+	.AddCheck<BybitHealthCheck>("Bybit")
+	.AddCheck<OKxHealthCheck>("OKx");
 
 var app = builder.Build();
 
@@ -108,47 +103,7 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions()
 
 app.UseHealthChecks("/health", new HealthCheckOptions()
 {
-	ResponseWriter = ((context, healthReport) =>
-	{
-		context.Response.ContentType = "application/json; charset=utf-8";
-
-		var options = new JsonWriterOptions { Indented = true };
-
-		using var memoryStream = new MemoryStream();
-		using (var jsonWriter = new Utf8JsonWriter(memoryStream, options))
-		{
-			jsonWriter.WriteStartObject();
-			jsonWriter.WriteString("status", healthReport.Status.ToString());
-			jsonWriter.WriteStartObject("results");
-
-			foreach (var healthReportEntry in healthReport.Entries)
-			{
-				jsonWriter.WriteStartObject(healthReportEntry.Key);
-				jsonWriter.WriteString("status",
-					healthReportEntry.Value.Status.ToString());
-				jsonWriter.WriteString("description",
-					healthReportEntry.Value.Description);
-				jsonWriter.WriteStartObject("data");
-
-				foreach (var item in healthReportEntry.Value.Data)
-				{
-					jsonWriter.WritePropertyName(item.Key);
-
-					JsonSerializer.Serialize(jsonWriter, item.Value,
-						item.Value?.GetType() ?? typeof(object));
-				}
-
-				jsonWriter.WriteEndObject();
-				jsonWriter.WriteEndObject();
-			}
-
-			jsonWriter.WriteEndObject();
-			jsonWriter.WriteEndObject();
-		}
-
-		return context.Response.WriteAsync(
-			Encoding.UTF8.GetString(memoryStream.ToArray()));
-	})
+	ResponseWriter = HealthCheckResponseWriter.Write
 });
 
 app.UseAuthentication();

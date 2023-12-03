@@ -1,6 +1,5 @@
-﻿using AspNetCore.Authentication.ApiKey;
-using TradeProcessor.Api.Authentication;
-using TradeProcessor.Api.Domain;
+﻿using TradeProcessor.Api.Authentication;
+using TradeProcessor.Domain;
 
 namespace TradeProcessor.Api.Contracts;
 
@@ -12,5 +11,5 @@ public record FvgChaserRequest(
     string? TakeProfit, // only the formatted string
     BiasType Bias) : IApiKeyProperty
 {
-    public string ApiKey { get; set; }
+	public string ApiKey { get; set; }
 }
