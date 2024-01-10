@@ -11,6 +11,6 @@ namespace TradeProcessor.Domain.Exchange
 		/// <param name="interval">Interval in the format of 5m, 1h, 1d etc...</param>
 		/// <param name="handler"></param>
 		/// <returns></returns>
-		Task Subscribe(string symbol, TimeSpan interval, Func<Candle, Task> handler);
+		Task Subscribe(Symbol symbol, TimeSpan interval, Func<Candle, Task> handler);
 	}
 }

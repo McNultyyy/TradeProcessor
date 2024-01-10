@@ -13,7 +13,7 @@ namespace TradeProcessor.Domain.Services
 		}
 
 		public async Task<OrderBlock?> FindOrderBlock(
-			string symbol,
+			Symbol symbol,
 			DateTime startDate, DateTime endDate,
 			TimeSpan interval,
 			BiasType bias)
@@ -31,7 +31,7 @@ namespace TradeProcessor.Domain.Services
 		}
 
 
-		private async Task<OrderBlock?> TryFindOrderBlock(string symbol, DateTime startDate, DateTime endDate, TimeSpan interval, BiasType bias)
+		private async Task<OrderBlock?> TryFindOrderBlock(Symbol symbol, DateTime startDate, DateTime endDate, TimeSpan interval, BiasType bias)
 		{
 			try
 			{

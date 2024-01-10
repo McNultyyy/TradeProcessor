@@ -1,4 +1,5 @@
 ﻿using OKX.Api;
+using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 
@@ -13,7 +14,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			_socketClient = socketClient;
 		}
 
-		public async Task Subscribe(string symbol, TimeSpan interval, Func<Candle, Task> handler)
+		public async Task Subscribe(Symbol symbol, TimeSpan interval, Func<Candle, Task> handler)
 		{
 			var okxPeriod = OKxHelper.MapToKlineInterval(interval);
 

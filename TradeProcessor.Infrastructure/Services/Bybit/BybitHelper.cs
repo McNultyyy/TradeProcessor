@@ -1,4 +1,5 @@
 ﻿using Bybit.Net.Enums;
+using TradeProcessor.Domain;
 using TradeProcessor.Domain.Helpers;
 
 namespace TradeProcessor.Infrastructure.Services.Bybit
@@ -44,6 +45,11 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 		{
 			return MapToKlineInterval(
 				TimeHelper.TimeSpanToIntervalString(timeSpan));
+		}
+
+		public static string ToBybitSymbol(Symbol symbol)
+		{
+			return $"{symbol.Base}{symbol.Quote}";
 		}
 	}
 }

@@ -4,5 +4,5 @@ namespace TradeProcessor.Domain.DataProvider;
 
 public interface IDataProvider
 {
-	Task<IEnumerable<ICandle>> GetCandles(string symbol, DateTime from, DateTime to);
+	Task<IEnumerable<ICandle>> GetCandles(Symbol symbol, DateTime from, DateTime to);
 }

@@ -1,5 +1,6 @@
 ﻿using Swashbuckle.AspNetCore.Filters;
 using TradeProcessor.Api.Contracts;
+using TradeProcessor.Api.Contracts.FvgChaser;
 using TradeProcessor.Domain;
 
 namespace TradeProcessor.Api.Examples

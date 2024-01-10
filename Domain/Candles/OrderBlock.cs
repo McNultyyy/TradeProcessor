@@ -2,11 +2,11 @@
 {
 	public record OrderBlock(
 		ICandle LiquidityCandle,
-		ICandle LiquidityTakingCandle, 
-		ICandle ImpulseCandle) 
+		ICandle LiquidityTakingCandle,
+		ICandle ImpulseCandle)
 		: ICandle
 	{
-		public string Symbol { get; set; } = LiquidityCandle.Symbol;
+		public Symbol Symbol { get; set; } = LiquidityCandle.Symbol;
 
 		/*
 		 * todo:

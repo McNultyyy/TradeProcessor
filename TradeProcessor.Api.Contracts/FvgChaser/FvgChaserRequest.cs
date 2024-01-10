@@ -1,7 +1,6 @@
-﻿using TradeProcessor.Api.Authentication;
-using TradeProcessor.Domain;
+﻿using TradeProcessor.Domain;
 
-namespace TradeProcessor.Api.Contracts;
+namespace TradeProcessor.Api.Contracts.FvgChaser;
 
 public record FvgChaserRequest(
     string Symbol,

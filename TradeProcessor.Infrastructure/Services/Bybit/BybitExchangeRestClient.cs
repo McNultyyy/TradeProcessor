@@ -16,10 +16,10 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			_restClient = restClient;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(string symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit)
 		{
 			var orderResult = await _restClient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
-				symbol,
+				BybitHelper.ToBybitSymbol(symbol),
 				bias == BiasType.Bullish ? OrderSide.Buy : OrderSide.Sell,
 				OrderType.Limit,
 				quantity,
@@ -34,11 +34,11 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			return Result.Fail(orderResult.Error.Message);
 		}
 
-		public async Task<Result<IEnumerable<Candle>>> GetCandles(string symbol, TimeSpan interval, DateTime from, DateTime to)
+		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from, DateTime to)
 		{
 			var result = await _restClient.V5Api.ExchangeData.GetKlinesAsync(
 				Category.Linear,
-				symbol,
+				BybitHelper.ToBybitSymbol(symbol),
 				BybitHelper.MapToKlineInterval(interval),
 				from, to);
 
@@ -60,6 +60,23 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			}
 			else
 				return Result.Fail(result.Error.Message);
+		}
+
+		public async Task<Result<IEnumerable<Symbol>>> GetSymbols()
+		{
+			var result = await _restClient.DerivativesApi.ExchangeData.GetSymbolsAsync(Category.Linear);
+
+			if (result.Success)
+			{
+				var symbols = result
+					.Data
+					.Data
+					.Select(x => new Symbol(x.BaseCurrency, x.QuoteCurrency));
+
+				return Result.Ok(symbols);
+			}
+
+			return Result.Fail(result.Error.Message);
 		}
 	}
 }

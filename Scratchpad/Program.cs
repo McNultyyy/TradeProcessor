@@ -33,7 +33,7 @@ await LoadData();
 
 
 await using var db = new PricesContext();
-var finder = new PivotTakenFinder(new SqliteDataProvider(db));
+//var finder = new PivotTakenFinder(new SqliteDataProvider(db));
 
 //await finder.FindPivotsTaken("FTMUSDT", TimeRange.Monthly);
 
@@ -120,7 +120,7 @@ async Task FindMonthlyPivotsTaken()
 	var bullishOrderBlocks = new List<OrderBlock>();
 	var bearishOrderBlocks = new List<OrderBlock>();
 
-	foreach (var symbol in symbols.Select(x => x))
+	foreach (var symbol in symbols.Select(x => Symbol.Create(x).Value))
 	{
 		Console.WriteLine($"Looking for OrderBlocks for {symbol}...");
 		var bullishOrderBlock = await orderBlockFinder.FindOrderBlock(symbol, orderBlockStartDate, endDate, interval, BiasType.Bullish);
@@ -155,7 +155,7 @@ async Task FindAndSaveOrderBlocks()
 	var bullishOrderBlocks = new List<OrderBlock>();
 	var bearishOrderBlocks = new List<OrderBlock>();
 
-	foreach (var symbol in symbols.Select(x => x))
+	foreach (var symbol in symbols.Select(x => Symbol.Create(x).Value))
 	{
 		Console.WriteLine($"Looking for OrderBlocks for {symbol}...");
 		var bullishOrderBlock = await orderBlockFinder.FindOrderBlock(symbol, orderBlockStartDate, endDate, interval, BiasType.Bullish);
@@ -188,7 +188,7 @@ async Task FindAndSaveImbalances()
 	var imbalanceFinder = new ImbalanceFinder(new SqliteDataProvider(db));
 
 
-	foreach (var symbol in symbols.Select(x => x))
+	foreach (var symbol in symbols.Select(x => Symbol.Create(x).Value))
 	{
 		Console.WriteLine($"Looking for Imbalances for {symbol}...");
 		var imbalances = await imbalanceFinder.FindImbalances(symbol, imbalanceStartDate, endDate, GapType.Price);
@@ -223,7 +223,7 @@ CandleEntity ToCandleEntity(Candle candle, string symbol)
 {
 	return new CandleEntity()
 	{
-		Symbol = symbol,
+		Symbol = Symbol.Create(symbol).Value, //todo: refactor where we create the symbol
 
 		Open = candle.Open,
 		High = candle.High,
@@ -234,7 +234,7 @@ CandleEntity ToCandleEntity(Candle candle, string symbol)
 	};
 }
 
-OrderBlockEntity ToOrderBlockEntity(OrderBlock orderBlock, string symbol)
+OrderBlockEntity ToOrderBlockEntity(OrderBlock orderBlock, Symbol symbol)
 {
 	return new OrderBlockEntity()
 	{
@@ -255,7 +255,7 @@ OrderBlockEntity ToOrderBlockEntity(OrderBlock orderBlock, string symbol)
 	};
 }
 
-ImbalanceEntity ToImbalanceEntity(Imbalance imbalance, string symbol)
+ImbalanceEntity ToImbalanceEntity(Imbalance imbalance, Symbol symbol)
 {
 	return new ImbalanceEntity()
 	{

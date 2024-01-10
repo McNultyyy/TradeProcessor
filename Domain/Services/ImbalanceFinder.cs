@@ -13,7 +13,7 @@ namespace TradeProcessor.Domain.Services
 		}
 
 		public async Task<IEnumerable<Imbalance>> FindImbalances(
-			string symbol,
+			Symbol symbol,
 			DateTime startDate, DateTime endDate,
 			params GapType[] gapType)
 		{

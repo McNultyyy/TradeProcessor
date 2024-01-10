@@ -21,7 +21,7 @@ namespace TradeProcessor.Domain.Services
 		}
 
 		public async Task<IEnumerable<string>> FindPivotsTaken(
-			string symbol,
+			Symbol symbol,
 			TimeRange timeSpan)
 		{
 

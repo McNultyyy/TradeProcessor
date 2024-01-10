@@ -8,7 +8,7 @@ namespace Scratchpad.Entities
 	{
 		public Guid Id { get; set; } = new Guid();
 
-		public string Symbol { get; set; }
+		public Symbol Symbol { get; set; }
 		public decimal Open { get; set; }
 		public decimal High { get; set; }
 		public decimal Low { get; set; }

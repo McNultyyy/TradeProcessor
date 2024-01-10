@@ -2,6 +2,7 @@
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using TradeProcessor.Api.Contracts;
+using TradeProcessor.Api.Contracts.FvgChaser;
 using TradeProcessor.Domain;
 
 namespace TradeProcessor.Api.Controllers
@@ -24,7 +25,7 @@ namespace TradeProcessor.Api.Controllers
 				.Enqueue(() =>
 
 					_fvgChaser.DoWork(
-						request.Symbol,
+						Symbol.Create(request.Symbol).Value,
 						request.Interval,
 						request.RiskPerTrade,
 						request.Stoploss,
@@ -46,7 +47,7 @@ namespace TradeProcessor.Api.Controllers
 
 			return Ok();
 		}
-
+		/*
 		// todo: workout why this doesn't work :/
 		[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
 		public static void Execute(
@@ -60,5 +61,6 @@ namespace TradeProcessor.Api.Controllers
 		{
 			service.DoWork(symbol, interval, riskPerTrade, stoploss, takeProfit, bias);
 		}
+		*/
 	}
 }

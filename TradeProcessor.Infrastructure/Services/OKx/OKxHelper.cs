@@ -1,4 +1,5 @@
 ﻿using OKX.Api.Enums;
+using TradeProcessor.Domain;
 using TradeProcessor.Domain.Helpers;
 
 namespace TradeProcessor.Infrastructure.Services.OKx
@@ -12,9 +13,9 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				"1m" => OkxPeriod.OneMinute,
 				"5m" => OkxPeriod.FiveMinutes,
 				"15m" => OkxPeriod.FifteenMinutes,
-				"1H" => OkxPeriod.OneHour,
+				"60m" or "1H" => OkxPeriod.OneHour,
 				"4H" => OkxPeriod.FourHours,
-				"1D" => OkxPeriod.OneDay,
+				"24H" or "1D" => OkxPeriod.OneDay,
 
 				_ => throw new ArgumentOutOfRangeException(nameof(requestInterval), requestInterval)
 			};
@@ -31,13 +32,16 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 		/// </summary>
 		/// <param name="symbol">BTCUSDT</param>
 		/// <returns>BTC-USDT</returns>
-		public static string ToOkxSymbol(string symbol)
+		public static string ToOkxSymbol(Symbol symbol)
 		{
-			var quoteCurrency = String.Join("", symbol.TakeLast("USDT".Length));
+			return $"{symbol.Base}-{symbol.Quote}-SWAP";
+		}
 
-			var baseCurrency = symbol.Replace(quoteCurrency, "");
+		public static Symbol ToSymbol(string okxSymbol)
+		{
+			var parts = okxSymbol.Split("-");
 
-			return $"{baseCurrency}-{quoteCurrency}-SWAP";
+			return new Symbol(parts[0], parts[1]);
 		}
 	}
 }

@@ -2,7 +2,7 @@
 
 public class StaticTakeProfit : ITakeProfit
 {
-    private decimal _result;
+    private readonly decimal _result;
 
     public StaticTakeProfit(decimal result)
     {

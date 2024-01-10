@@ -47,3 +47,5 @@ msbuild.wrn
 Properties
 
 *.db
+/prices.db-shm
+/prices.db-wal

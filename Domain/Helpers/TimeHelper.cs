@@ -8,10 +8,10 @@
 				return $"{timeSpan.Minutes}m";
 
 			if (timeSpan < TimeSpan.FromHours(25))
-				return $"{timeSpan.Hours}H";
+				return $"{timeSpan.TotalHours}H";
 
 			if (timeSpan < TimeSpan.FromDays(8))
-				return $"{timeSpan.Days}D";
+				return $"{timeSpan.TotalDays}D";
 
 			throw new ArgumentOutOfRangeException(nameof(timeSpan), timeSpan.ToString());
 		}

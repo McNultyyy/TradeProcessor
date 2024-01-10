@@ -1,4 +1,5 @@
-﻿using TradeProcessor.Domain.Candles;
+﻿using TradeProcessor.Domain;
+using TradeProcessor.Domain.Candles;
 
 namespace Scratchpad.Entities
 {
@@ -19,7 +20,7 @@ namespace Scratchpad.Entities
 			set { }
 		}
 
-		public string Symbol { get; set; }
+		public Symbol Symbol { get; set; }
 
 		public decimal Open { get; set; }
 		public decimal High { get; set; }

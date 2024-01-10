@@ -1,5 +1,6 @@
 ﻿using Bybit.Net.Enums;
 using Bybit.Net.Interfaces.Clients;
+using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 
@@ -15,13 +16,13 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			_socketClient = socketClient;
 		}
 
-		public async Task Subscribe(string symbol, TimeSpan interval, Func<Candle, Task> handler)
+		public async Task Subscribe(Symbol symbol, TimeSpan interval, Func<Candle, Task> handler)
 		{
 			var bybitKlineInterval = BybitHelper.MapToKlineInterval(interval);
 
 			await _socketClient
 				.DerivativesApi
-				.SubscribeToKlineUpdatesAsync(StreamDerivativesCategory.USDTPerp, symbol, bybitKlineInterval,
+				.SubscribeToKlineUpdatesAsync(StreamDerivativesCategory.USDTPerp, BybitHelper.ToBybitSymbol(symbol), bybitKlineInterval,
 					async updates =>
 					{
 

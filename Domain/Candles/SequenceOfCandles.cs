@@ -2,7 +2,7 @@
 {
 	public record SequenceOfCandles : ICandle
 	{
-		public string Symbol { get; set; }
+		public Symbol Symbol { get; set; }
 		public decimal Open { get; }
 		public decimal High { get; }
 		public decimal Low { get; }

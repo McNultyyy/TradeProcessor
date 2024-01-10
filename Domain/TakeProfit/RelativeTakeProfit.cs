@@ -3,7 +3,7 @@
 public class RelativeTakeProfit : ITakeProfit
 {
     private readonly decimal _entryPrice;
-    private decimal _offset;
+    private readonly decimal _offset;
     private readonly bool _isBullish;
 
     public RelativeTakeProfit(decimal entryPrice, decimal offset, bool isBullish)

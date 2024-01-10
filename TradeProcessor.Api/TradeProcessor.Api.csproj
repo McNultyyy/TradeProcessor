@@ -40,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\TradeProcessor.Core.csproj" />
+    <ProjectReference Include="..\TradeProcessor.Api.Contracts\TradeProcessor.Api.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

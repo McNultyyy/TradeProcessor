@@ -12,17 +12,20 @@ public class FvgChaser
 {
 	private IExchangeRestClient _exchangeRestClient;
 	private IExchangeSocketClient _exchangeSocketClient;
+	private StoplossStrategyFactory _stoplossStrategyFactory;
 
 	private readonly ILogger<FvgChaser> _logger;
 
-	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient)
+	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory)
 	{
 		_logger = logger;
 		_exchangeRestClient = exchangeRestClient;
 		_exchangeSocketClient = exchangeSocketClient;
+		_stoplossStrategyFactory = stoplossStrategyFactory;
 	}
 
-	public async Task DoWork(string symbol,
+	[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
+	public async Task DoWork(Symbol symbol,
 		string interval,
 		decimal riskPerTrade,
 		string stoploss,
@@ -82,7 +85,7 @@ public class FvgChaser
 									? imbalance.High
 									: imbalance.Low;
 
-								await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade);
+								await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade, intervalTimeSpan);
 							}
 							else
 							{
@@ -100,15 +103,15 @@ public class FvgChaser
 			});
 	}
 
-	async Task PlaceLimitOrder(string symbol, BiasType biasType, string takeProfit, string stoploss, decimal limitPrice, decimal riskPerTrade)
+	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string takeProfit, string stoploss, decimal limitPrice, decimal riskPerTrade, TimeSpan intervalTimeSpan)
 	{
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
-		var stoplossStrategy = GetStoploss(limitPrice, biasType, stoploss);
+		var stoplossStrategy = await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan);
 		_logger.LogInformation("Using StoplossStrategy: {stopLossStrategy}", stoplossStrategy?.GetType().ToString());
 		var stoplossDecimal = stoplossStrategy?.Result();
 
-		var takeProfitStrategy = GetTakeProfit(limitPrice, biasType, takeProfit, stoploss);
+		var takeProfitStrategy = GetTakeProfit(symbol, limitPrice, biasType, takeProfit, stoplossStrategy);
 		_logger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
 		var takeProfitDecimal = takeProfitStrategy?.Result() ?? null;
 
@@ -136,11 +139,8 @@ public class FvgChaser
 	}
 
 
-	private ITakeProfit? GetTakeProfit(decimal entryPrice, BiasType bias, string takeProfit, string stoploss)
+	private ITakeProfit? GetTakeProfit(Symbol symbol, decimal entryPrice, BiasType bias, string takeProfit, IStoploss? stoplossStrategy)
 	{
-		// TODO: just pass in the stoploss rather than calculate it again
-
-		var stoplossStrategy = GetStoploss(entryPrice, bias, stoploss);
 		var stoplossDecimal = (decimal)stoplossStrategy?.Result();
 
 		//////////////
@@ -176,30 +176,5 @@ public class FvgChaser
 		}
 
 		return new StaticTakeProfit(decimal.Parse(takeProfit));
-	}
-
-	private IStoploss? GetStoploss(decimal entryPrice, BiasType bias, string stoploss)
-	{
-		string? tpString;
-		if (stoploss.Contains("%"))
-		{
-			tpString = stoploss
-				.Replace("%", "")
-				.Replace("+", "")
-				.Replace("-", "");
-
-			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, bias == BiasType.Bullish);
-		}
-
-		if (stoploss.Contains("+") || stoploss.Contains("-"))
-		{
-			tpString = stoploss
-				.Replace("+", "")
-				.Replace("-", "");
-
-			return new RelativeStoploss(entryPrice, decimal.Parse(tpString), bias == BiasType.Bullish);
-		}
-
-		return new StaticStoploss(decimal.Parse(stoploss));
 	}
 }

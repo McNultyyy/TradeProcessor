@@ -2,7 +2,7 @@
 {
 	public interface ICandle
 	{
-		string Symbol { get; }
+		Symbol Symbol { get; }
 
 		decimal Open { get; }
 		decimal High { get; }

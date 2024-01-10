@@ -31,5 +31,11 @@
 				action(instance);
 			}
 		}
+
+		public static bool None<TSource>(this IEnumerable<TSource> source,
+			Func<TSource, bool> predicate)
+		{
+			return !source.Any(predicate);
+		}
 	}
 }

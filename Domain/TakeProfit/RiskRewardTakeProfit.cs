@@ -2,10 +2,10 @@
 
 public class RiskRewardTakeProfit : ITakeProfit
 {
-    private decimal _entryPrice;
-    private decimal _stoploss;
-    private decimal _riskReward;
-    private bool _isBullish;
+    private readonly decimal _entryPrice;
+    private readonly decimal _stoploss;
+    private readonly decimal _riskReward;
+    private readonly bool _isBullish;
 
     public RiskRewardTakeProfit(decimal entryPrice, decimal stoploss, decimal riskReward, bool isBullish)
     {

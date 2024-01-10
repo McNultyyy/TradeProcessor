@@ -1,19 +1,17 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Dynamic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OKX.Api;
+using TradeProcessor.Core;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Exchange;
-using TradeProcessor.Infrastructure.DependencyInjection;
 
 var host = Host
 	.CreateDefaultBuilder()
 	.ConfigureServices((context, services) =>
 	{
-		services.AddTradeProcessorInfrastructure(context.Configuration);
+		services.AddTradeProcessorCore(context.Configuration);
 		services.AddLogging(l => l.AddConsole());
 
 	})
@@ -53,9 +51,8 @@ foreach (var item in dict)
 */
 
 
-
 var restService = host.Services.GetRequiredService<IExchangeRestClient>();
-var result = await restService.PlaceOrder("SOLUSDT", BiasType.Bullish, 10, 55, null);
+var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, 65);
 
 
 await host.StopAsync();
