@@ -5,7 +5,7 @@
 		public static string TimeSpanToIntervalString(TimeSpan timeSpan)
 		{
 			if (timeSpan < TimeSpan.FromMinutes(61))
-				return $"{timeSpan.Minutes}m";
+				return $"{timeSpan.TotalMinutes}m";
 
 			if (timeSpan < TimeSpan.FromHours(25))
 				return $"{timeSpan.TotalHours}H";
