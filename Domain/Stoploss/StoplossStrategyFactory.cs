@@ -14,7 +14,7 @@ namespace TradeProcessor.Domain.Stoploss
 			_averageTrueRangeProvider = averageTrueRangeProvider;
 		}
 
-		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string stoploss, decimal entryPrice, TimeSpan timeSpan)
+		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice, TimeSpan timeSpan)
 		{
 			string? tpString;
 			if (stoploss.Contains("%"))

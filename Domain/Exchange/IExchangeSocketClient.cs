@@ -2,7 +2,7 @@
 
 namespace TradeProcessor.Domain.Exchange
 {
-	public interface IExchangeSocketClient
+	public interface IExchangeSocketClient : IDisposable
 	{
 		/// <summary>
 		/// 

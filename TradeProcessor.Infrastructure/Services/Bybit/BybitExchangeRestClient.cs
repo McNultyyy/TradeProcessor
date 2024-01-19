@@ -16,7 +16,7 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			_restClient = restClient;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit, decimal? stopLoss)
 		{
 			var orderResult = await _restClient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
 				BybitHelper.ToBybitSymbol(symbol),
@@ -77,6 +77,16 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			}
 
 			return Result.Fail(result.Error.Message);
+		}
+
+		public Task<Result> EnsureMaxCrossLeverage(Symbol symbol)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Dispose()
+		{
+			_restClient.Dispose();
 		}
 	}
 }

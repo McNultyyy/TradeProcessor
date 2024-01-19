@@ -37,5 +37,41 @@
 		{
 			return !source.Any(predicate);
 		}
+
+
+		public static decimal RoundDownToMultiple(this decimal x, decimal y)
+		{
+			return Math.Round(x / y, MidpointRounding.ToZero) * y;
+		}
+
+		public static IEnumerable<IImbalance> OrderByGapType(this IEnumerable<IImbalance> imbalances)
+		{
+			foreach (var imbalance in imbalances)
+			{
+				if (imbalance.GapType == GapType.Price)
+					yield return imbalance;
+			}
+
+
+			foreach (var imbalance in imbalances)
+			{
+				if (imbalance.GapType == GapType.Volume)
+					yield return imbalance;
+			}
+
+
+			foreach (var imbalance in imbalances)
+			{
+				if (imbalance.GapType == GapType.Liquidity)
+					yield return imbalance;
+			}
+
+
+			foreach (var imbalance in imbalances)
+			{
+				if (imbalance.GapType == GapType.Opening)
+					yield return imbalance;
+			}
+		}
 	}
 }

@@ -17,16 +17,17 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 		public static IServiceCollection AddTradeProcessorInfrastructure(this IServiceCollection services,
 			IConfiguration configuration)
 		{
+			services.AddBybit(configuration);
+			services.AddOkx(configuration);
+
 			switch (configuration["Exchange"])
 			{
 				case "Bybit":
-					services.AddBybit(configuration);
 					services.AddSingleton<IExchangeRestClient, BybitExchangeRestClient>();
 					services.AddSingleton<IExchangeSocketClient, BybitExchangeSocketClient>();
 					break;
 
 				case "OKx":
-					services.AddOkx(configuration);
 					services.AddSingleton<IExchangeRestClient, OKxExchangeRestClient>();
 					services.AddSingleton<IExchangeSocketClient, OkxExchangeSocketClient>();
 					break;

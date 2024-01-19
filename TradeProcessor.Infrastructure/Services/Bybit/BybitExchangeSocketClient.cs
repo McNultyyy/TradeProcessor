@@ -45,5 +45,10 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 				 */
 			}
 		}
+
+		public void Dispose()
+		{
+			_socketClient.Dispose();
+		}
 	}
 }

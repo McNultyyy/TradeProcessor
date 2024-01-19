@@ -2,6 +2,7 @@
 using AspNetCore.Authentication.ApiKey;
 using Hangfire;
 using Hangfire.Console;
+using Hangfire.Console.Extensions;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -33,10 +34,9 @@ builder.Services.AddHangfire(x =>
 	x.UseConsole();
 });
 
-builder.Services.AddHangfireServer(options =>
-{
+builder.Services.AddHangfireServer(options => { });
 
-});
+builder.Services.AddHangfireConsoleExtensions();
 
 builder.Services.AddAuthentication()
 	.AddApiKeyInHeader<StaticApiKeyProvider>(AuthenticationSchemes.ApiKeyInHeader, x =>

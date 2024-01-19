@@ -1,6 +1,7 @@
 ﻿using ApiSharp.Extensions;
 using ApiSharp.Models;
 using FluentResults;
+using Microsoft.Extensions.Logging;
 using OKX.Api;
 using OKX.Api.Enums;
 using OKX.Api.Models.MarketData;
@@ -13,14 +14,32 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 	public class OKxExchangeRestClient : IExchangeRestClient
 	{
 		private readonly OKXRestApiClient _restClient;
+		private readonly ILogger<OKxExchangeRestClient> _logger;
 
-		public OKxExchangeRestClient(OKXRestApiClient restClient)
+		public OKxExchangeRestClient(OKXRestApiClient restClient, ILogger<OKxExchangeRestClient> logger)
 		{
 			_restClient = restClient;
+			_logger = logger;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit, decimal? stopLoss)
 		{
+			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
+
+			var result = await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
+			var contractValue = result.Data.First().ContractValue.Value;
+
+			if (quantity % contractValue != 0)
+			{
+				_logger.LogInformation("Quantity {quantity} must be a multiple of {contractValue}",
+					quantity, contractValue);
+
+				var newQuantity = quantity.RoundDownToMultiple(contractValue);
+				quantity = newQuantity / contractValue;
+
+				_logger.LogInformation("Quantity has been rounded down to {newQuantity}",
+					newQuantity);
+			}
 
 			decimal? tpOrderTriggerPrice = null;
 			if (takeProfit is not null)
@@ -40,11 +59,12 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			}
 
 			var orderResult = await _restClient.OrderBookTrading.Trade.PlaceOrderAsync(
-				instrumentId: OKxHelper.ToOkxSymbol(symbol),
+				instrumentId: okxSymbol,
 				tradeMode: OkxTradeMode.Cross,
 				orderSide: bias == BiasType.Bullish ? OkxOrderSide.Buy : OkxOrderSide.Sell,
 				positionSide: OkxPositionSide.Net,
 				orderType: OkxOrderType.LimitOrder,
+				quantityType: OkxQuantityType.BaseCurrency,
 				size: quantity,
 				price: price,
 				tpOrdPx: takeProfit,
@@ -128,6 +148,45 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			}
 
 			return Result.Fail(result.Error.Message);
+		}
+
+		public async Task<Result> EnsureMaxCrossLeverage(Symbol symbol)
+		{
+			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
+
+			var result = await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
+			if (!result.Success)
+			{
+				return Result.Fail(result.Error.Message);
+			}
+
+			var maxLeverage = result.Data.First().MaximumLeverage.Value;
+
+			_logger.LogInformation("Attempting to set {symbol} leverage to {leverage}",
+					symbol.ToString(), maxLeverage);
+
+			var setLeverageResult = await _restClient.TradingAccount.SetAccountLeverageAsync(
+				maxLeverage,
+				marginMode: OkxMarginMode.Cross,
+				instrumentId: okxSymbol);
+
+			if (setLeverageResult.Success)
+			{
+				_logger.LogInformation("Successfully set leverage");
+				return Result.Ok();
+			}
+
+			return Result.Fail("Could not set leverage");
+		}
+
+		private IEnumerable<decimal> AvailableLeverages()
+		{
+			return new[] { 125m, 100, 75m, 50m, 30m, 20m, 10m, 5m, 3m, 2m, 1m };
+		}
+
+		public void Dispose()
+		{
+			// do nothing?
 		}
 	}
 }

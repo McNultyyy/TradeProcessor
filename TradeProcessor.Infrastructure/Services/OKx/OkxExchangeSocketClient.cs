@@ -17,6 +17,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 		public async Task Subscribe(Symbol symbol, TimeSpan interval, Func<Candle, Task> handler)
 		{
 			var okxPeriod = OKxHelper.MapToKlineInterval(interval);
+			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
 
 			await _socketClient
 				.OrderBookTrading.MarketData.SubscribeToCandlesticksAsync(async candlestick =>
@@ -29,17 +30,22 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 						await handler(candle);
 					}
 				},
-					OKxHelper.ToOkxSymbol(symbol),
-					okxPeriod);
+				okxSymbol,
+				okxPeriod);
 
-			while (true)
-			{
-				/*
-				 * We want to keep this instance alive so that we can:
-				 *  1. Stop the job, if necessary, via the Hangfire UI.
-				 *  2. So that the REST and Socket clients do not get disposed.
-				 */
-			}
+
+			/*
+			 * We want to keep this instance alive so that we can:
+			 *  1. Stop the job, if necessary, via the Hangfire UI.
+			 *  2. So that the REST and Socket clients do not get disposed until the job is manually killed
+			 */
+
+			while (true) { }
+		}
+
+		public void Dispose()
+		{
+			_socketClient.Dispose();
 		}
 	}
 }

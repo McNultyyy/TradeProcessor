@@ -1,7 +1,5 @@
-﻿using System.ComponentModel;
-using Hangfire;
+﻿using Hangfire.Console.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using TradeProcessor.Api.Contracts;
 using TradeProcessor.Api.Contracts.FvgChaser;
 using TradeProcessor.Domain;
 
@@ -12,55 +10,30 @@ namespace TradeProcessor.Api.Controllers
 	public class TradeController : ControllerBase
 	{
 		private readonly Domain.Services.FvgChaser _fvgChaser;
+		private readonly IJobManager _jobManager;
 
-		public TradeController(Domain.Services.FvgChaser fvgChaser)
+		public TradeController(Domain.Services.FvgChaser fvgChaser, IJobManager jobManager)
 		{
 			_fvgChaser = fvgChaser;
+			_jobManager = jobManager;
 		}
 
 		[HttpPost(Name = "FvgChaser")]
-		public IActionResult FvgChase(FvgChaserRequest request)
+		public IActionResult FvgChaser(FvgChaserRequest request)
 		{
-			BackgroundJob
-				.Enqueue(() =>
-
-					_fvgChaser.DoWork(
-						Symbol.Create(request.Symbol).Value,
-						request.Interval,
-						request.RiskPerTrade,
-						request.Stoploss,
-						request.TakeProfit,
-						request.Bias
-						)
-
-					/*
-					Execute(
-						request.Symbol,
-						request.Interval,
-						request.RiskPerTrade,
-						request.Stoploss,
-						request.TakeProfit,
-						request.Bias,
-						_fvgChaser
-					)*/
-					);
+#pragma warning disable CS4014
+			_jobManager.Start<Domain.Services.FvgChaser>(x => _fvgChaser.DoWork(
+				Symbol.Create(request.Symbol).Value,
+				request.Interval,
+				request.RiskPerTrade,
+				request.Stoploss,
+				request.TakeProfit,
+				request.Bias,
+				request.Gaps
+			));
+#pragma warning restore CS4014
 
 			return Ok();
 		}
-		/*
-		// todo: workout why this doesn't work :/
-		[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
-		public static void Execute(
-			string symbol,
-			string interval,
-			decimal riskPerTrade,
-			string stoploss,
-			string? takeProfit,
-			BiasType bias,
-			Domain.Services.FvgChaser service)
-		{
-			service.DoWork(symbol, interval, riskPerTrade, stoploss, takeProfit, bias);
-		}
-		*/
 	}
 }
