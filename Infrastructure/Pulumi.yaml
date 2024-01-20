@@ -1,3 +1,5 @@
 name: Infrastructure
 description: A minimal Azure Native C# Pulumi program
 runtime: dotnet
+
+azure:skipProviderRegistration: "true"

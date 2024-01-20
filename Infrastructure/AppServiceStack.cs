@@ -60,9 +60,9 @@ class AppServiceStack : Stack
 					//NetFrameworkVersion = "net6.0",
 					HealthCheckPath = "/health",
 					MinTlsVersion = "1.2",
-
-
 				},
+
+				Location = "West Europe",
 
 				Logs = new AppServiceLogsArgs()
 				{
