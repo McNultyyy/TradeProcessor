@@ -5,7 +5,7 @@ namespace TradeProcessor.Domain.Stoploss
 {
 	public class StoplossStrategyFactory
 	{
-		private AverageTrueRangeProvider _averageTrueRangeProvider;
+		private readonly AverageTrueRangeProvider _averageTrueRangeProvider;
 
 		private const string AtrRegex = "([0-9])atr";
 

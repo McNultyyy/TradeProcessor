@@ -2,7 +2,7 @@
 
 public class StaticStoploss : IStoploss
 {
-    private decimal _result;
+    private readonly decimal _result;
 
     public StaticStoploss(decimal result)
     {
