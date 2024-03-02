@@ -44,8 +44,14 @@
 			return Math.Round(x / y, MidpointRounding.ToZero) * y;
 		}
 
+		public static IEnumerable<IImbalance> OrderByGapType2(this IEnumerable<IImbalance> imbalances)
+		{
+			return imbalances.OrderBy(x => x.GapType, new GapTypeComparer());
+		}
+
 		public static IEnumerable<IImbalance> OrderByGapType(this IEnumerable<IImbalance> imbalances)
 		{
+
 			foreach (var imbalance in imbalances)
 			{
 				if (imbalance.GapType == GapType.Price)
@@ -72,6 +78,26 @@
 				if (imbalance.GapType == GapType.Opening)
 					yield return imbalance;
 			}
+		}
+	}
+
+	public class GapTypeComparer : IComparer<GapType>
+	{
+		private static readonly IList<GapType> DefaultOrder = new List<GapType>()
+		{
+			GapType.Price, GapType.Volume, GapType.Liquidity, GapType.Opening
+		};
+
+		private readonly IList<GapType> _order;
+
+		public GapTypeComparer(IList<GapType>? order = null)
+		{
+			_order = order ?? DefaultOrder;
+		}
+
+		public int Compare(GapType x, GapType y)
+		{
+			return _order.IndexOf(y) - _order.IndexOf(x);
 		}
 	}
 }

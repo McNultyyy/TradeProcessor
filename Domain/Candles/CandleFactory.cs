@@ -9,16 +9,13 @@ namespace TradeProcessor.Domain.Candles
 			if (!candles.All(x => x.OpenDateTime.Month == candles.First().OpenDateTime.Month))
 				return Result.Fail("Not all candles share the same month");
 
-
 			var openCandle = candles.MinBy(x => x.OpenDateTime);
 			var closeCandle = candles.MaxBy(x => x.CloseDateTime);
 
-			decimal open, high, low, close;
-
-			open = openCandle.Open;
-			high = candles.Max(x => x.High);
-			low = candles.Min(x => x.Low);
-			close = closeCandle.Close;
+			var open = openCandle.Open;
+			var high = candles.Max(x => x.High);
+			var low = candles.Min(x => x.Low);
+			var close = closeCandle.Close;
 
 			return Result.Ok(new Candle(open, high, low, close, openCandle.OpenDateTime, closeCandle.CloseDateTime, openCandle.Symbol));
 		}

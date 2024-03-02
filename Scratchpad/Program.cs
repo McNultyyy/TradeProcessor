@@ -14,23 +14,24 @@ Console.WriteLine("Do Work");
 var interval = TimeSpan.FromHours(24);
 
 var endDate = DateTime.Today - interval;
-var orderBlockStartDate = endDate - (10 * interval); 
+var orderBlockStartDate = endDate - (10 * interval);
 var imbalanceStartDate = endDate - (3 * interval);
 
 var binanceClient = new BinanceRestClient() { };
 
-var symbols = (binanceClient.UsdFuturesApi.CommonFuturesClient.GetSymbolsAsync())
+var symbols = (binanceClient.SpotApi.ExchangeData.GetTickersAsync())
 	.Result
 	.Data
-	.Where(x => x.Name.EndsWith("USDT"))
-	.OrderBy(x => x.Name)
-	.Select(x => x.Name)
+	.Select(x => x.Symbol)
+	.Where(x =>
+		x.EndsWith("USDT")
+		&& !x.EndsWith("UPUSDT")
+		&& !x.EndsWith("DOWNUSDT"))
+	.OrderBy(x => x)
+	.Select(x => x)
 	.ToList();
 
-
-	
 await LoadData();
-
 
 await using var db = new PricesContext();
 //var finder = new PivotTakenFinder(new SqliteDataProvider(db));
@@ -39,10 +40,9 @@ await using var db = new PricesContext();
 
 await FindAndSaveOrderBlocks();
 
-/*
-*
+
 await FindAndSaveImbalances();
-*/
+
 
 
 
@@ -62,12 +62,16 @@ async Task LoadData()
 
 	var binanceClient = new BinanceRestClient() { };
 
-	var symbols = (binanceClient.UsdFuturesApi.CommonFuturesClient.GetSymbolsAsync())
+	var symbols = (binanceClient.SpotApi.ExchangeData.GetTickersAsync())
 		.Result
 		.Data
-		.Where(x => x.Name.EndsWith("USDT"))
-		.OrderBy(x => x.Name)
-		.Select(x => x.Name)
+		.Select(x => x.Symbol)
+		.Where(x =>
+			x.EndsWith("USDT")
+			&& !x.EndsWith("UPUSDT")
+			&& !x.EndsWith("DOWNUSDT"))
+		.OrderBy(x => x)
+		.Select(x => x)
 		.ToList();
 
 	Console.WriteLine($"Found {symbols.Count} symbols");
@@ -78,7 +82,7 @@ async Task LoadData()
 		foreach (var symbol in symbols)
 		{
 			var binanceKlines =
-				(await binanceClient.UsdFuturesApi.ExchangeData.GetKlinesAsync(
+				(await binanceClient.SpotApi.ExchangeData.GetKlinesAsync(
 					symbol,
 					BinanceKlineIntervalFromTimeSpan(interval),
 			startDate, endDate))

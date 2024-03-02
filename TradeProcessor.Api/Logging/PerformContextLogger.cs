@@ -1,4 +1,4 @@
-using Hangfire.Console;
+﻿using Hangfire.Console;
 using Hangfire.Server;
 
 namespace TradeProcessor.Api.Logging;
@@ -18,7 +18,10 @@ public class PerformContextLogger<T> : ILogger<T>
     {
         _logger.Log(logLevel, eventId, state, exception, formatter);
 
-        _performContext.WriteLine(formatter(state, exception));
+        //var logMessage = formatter(state, exception);
+		
+		// todo: fix
+		//_performContext.WriteLine(ConsoleTextColor.Black, (object)logMessage);
     }
 
     public bool IsEnabled(LogLevel logLevel)

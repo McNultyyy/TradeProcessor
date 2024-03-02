@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using TradeProcessor.Domain.TechnicalAnalysis;
 
 namespace TradeProcessor.Domain.Stoploss
@@ -6,46 +7,65 @@ namespace TradeProcessor.Domain.Stoploss
 	public class StoplossStrategyFactory
 	{
 		private readonly AverageTrueRangeProvider _averageTrueRangeProvider;
+		private ILogger<StoplossStrategyFactory> _logger;
 
 		private const string AtrRegex = "([0-9])atr";
 
-		public StoplossStrategyFactory(AverageTrueRangeProvider averageTrueRangeProvider)
+		public StoplossStrategyFactory(AverageTrueRangeProvider averageTrueRangeProvider, ILogger<StoplossStrategyFactory> logger)
 		{
 			_averageTrueRangeProvider = averageTrueRangeProvider;
+			_logger = logger;
 		}
 
 		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice, TimeSpan timeSpan)
 		{
-			string? tpString;
-			if (stoploss.Contains("%"))
+			var stoplossStrategy = stoploss switch
 			{
-				tpString = stoploss
-					.Replace("%", "")
-					.Replace("+", "")
-					.Replace("-", "");
+				null => throw new ArgumentNullException(nameof(stoploss)),
 
-				return new PercentageStoploss(decimal.Parse(tpString), entryPrice, bias == BiasType.Bullish);
-			}
+				_ when stoploss.Contains('%') =>
+					CreatePercentageStoploss(bias, stoploss, entryPrice),
 
-			if (stoploss.Contains("+") || stoploss.Contains("-"))
-			{
-				tpString = stoploss
-					.Replace("+", "")
-					.Replace("-", "");
+				_ when stoploss.Contains('+') || stoploss.Contains('-') =>
+					CreateRelativeStoploss(bias, stoploss, entryPrice),
 
-				return new RelativeStoploss(entryPrice, decimal.Parse(tpString), bias == BiasType.Bullish);
-			}
+				_ when stoploss.Contains("atr", StringComparison.InvariantCultureIgnoreCase) =>
+					await CreateAtrStoploss(symbol, bias, stoploss, entryPrice, timeSpan),
 
-			if (stoploss.Contains("atr", StringComparison.InvariantCultureIgnoreCase))
-			{
-				var atrMultiplier = int.Parse(Regex.Match(stoploss, AtrRegex).Groups[1].Value);
+				_ => new StaticStoploss(decimal.Parse(stoploss))
+			};
 
-				var atr = await _averageTrueRangeProvider.GetCurrentAverageTrueRange(symbol, timeSpan);
+			_logger.LogInformation("Using StoplossStrategy: {stopLossStrategy}", stoplossStrategy?.GetType().ToString());
 
-				return new RelativeStoploss(entryPrice, atrMultiplier * atr, bias == BiasType.Bullish);
-			}
+			return stoplossStrategy;
+		}
 
-			return new StaticStoploss(decimal.Parse(stoploss));
+		private async Task<IStoploss> CreateAtrStoploss(Symbol symbol, BiasType bias, string stoploss, decimal entryPrice,
+			TimeSpan timeSpan)
+		{
+			var atrMultiplier = int.Parse(Regex.Match(stoploss, AtrRegex).Groups[1].Value);
+			var atr = await _averageTrueRangeProvider.GetCurrentAverageTrueRange(symbol, timeSpan);
+
+			return new RelativeStoploss(entryPrice, atrMultiplier * atr, bias == BiasType.Bullish);
+		}
+
+		private static IStoploss CreatePercentageStoploss(BiasType bias, string stoploss, decimal entryPrice)
+		{
+			var tpString = stoploss
+				.Replace("%", "")
+				.Replace("+", "")
+				.Replace("-", "");
+
+			return new PercentageStoploss(decimal.Parse(tpString), entryPrice, bias == BiasType.Bullish);
+		}
+
+		private static IStoploss CreateRelativeStoploss(BiasType bias, string stoploss, decimal entryPrice)
+		{
+			var offset = stoploss
+				.Replace("+", "")
+				.Replace("-", "");
+
+			return new RelativeStoploss(entryPrice, decimal.Parse(offset), bias == BiasType.Bullish);
 		}
 	}
 }

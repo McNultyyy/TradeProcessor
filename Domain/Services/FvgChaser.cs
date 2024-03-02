@@ -4,31 +4,33 @@ using Microsoft.Extensions.Logging;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 using TradeProcessor.Domain.Helpers;
+using TradeProcessor.Domain.Risk;
 using TradeProcessor.Domain.Stoploss;
 using TradeProcessor.Domain.TakeProfit;
 
 namespace TradeProcessor.Domain.Services;
 
-public class FvgChaser : IDisposable
+public class FvgChaser
 {
 	private readonly IExchangeRestClient _exchangeRestClient;
 	private readonly IExchangeSocketClient _exchangeSocketClient;
 	private readonly StoplossStrategyFactory _stoplossStrategyFactory;
+	private readonly RiskStrategyFactory _riskStrategyFactory;
+	private readonly ILogger<FvgChaser> _logger;
 
-	private ILogger<FvgChaser> Logger { get; set; }
-
-	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory)
+	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory, RiskStrategyFactory riskStrategyFactory)
 	{
-		Logger = logger;
+		_logger = logger;
 		_exchangeRestClient = exchangeRestClient;
 		_exchangeSocketClient = exchangeSocketClient;
 		_stoplossStrategyFactory = stoplossStrategyFactory;
+		_riskStrategyFactory = riskStrategyFactory;
 	}
 
 	[DisplayName("{5} {0} {1}")] // Used by Hangfire console for JobName
 	public async Task DoWork(Symbol symbol,
 		string interval,
-		decimal riskPerTrade,
+		string riskPerTrade,
 		string stoploss,
 		string? takeProfit,
 		BiasType bias,
@@ -68,12 +70,12 @@ public class FvgChaser : IDisposable
 					if (threeCandles.TryFindImbalances(out var imbalances))
 					{
 
-						Logger.LogInformation("Found {imbalanceCount} imbalances.",
+						_logger.LogInformation("Found {imbalanceCount} imbalances.",
 							imbalances.Count());
 
 						foreach (var foundImbalance in imbalances)
 						{
-							Logger.LogInformation("Found imbalance: {imbalance}.",
+							_logger.LogInformation("Found imbalance: {imbalance}.",
 								foundImbalance);
 						}
 
@@ -96,13 +98,13 @@ public class FvgChaser : IDisposable
 							}
 							else
 							{
-								Logger.LogInformation(
+								_logger.LogInformation(
 									"Imbalance is not in the direction of bias - Ignored.");
 							}
 						}
 						else
 						{
-							Logger.LogInformation(
+							_logger.LogInformation(
 								$"Ignoring non-{nameof(GapType.Price)} imbalance.");
 						}
 					}
@@ -110,21 +112,23 @@ public class FvgChaser : IDisposable
 			});
 	}
 
-	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss, decimal limitPrice, decimal riskPerTrade, TimeSpan intervalTimeSpan)
+	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss, decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan)
 	{
-		Logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
+		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
 		var stoplossStrategy = await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan);
-		Logger.LogInformation("Using StoplossStrategy: {stopLossStrategy}", stoplossStrategy?.GetType().ToString());
 		var stoplossDecimal = stoplossStrategy?.Result();
 
 		var takeProfitStrategy = GetTakeProfit(symbol, limitPrice, biasType, takeProfit, stoplossStrategy);
-		Logger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
+		_logger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
 		var takeProfitDecimal = takeProfitStrategy?.Result() ?? null;
+
+		var riskStrategy = await _riskStrategyFactory.GetRisk(riskPerTrade);
+		var risk = riskStrategy.Result();
 
 		var quantity =
 			Math.Round(
-				riskPerTrade / Math.Abs(limitPrice - stoplossDecimal.Value),
+				risk / Math.Abs(limitPrice - stoplossDecimal.Value),
 				3); //todo: why is this 3?
 
 		var orderResult = await _exchangeRestClient.PlaceOrder(
@@ -137,11 +141,11 @@ public class FvgChaser : IDisposable
 
 		if (orderResult.IsFailed)
 		{
-			Logger.LogError("Order failed with {error}", orderResult.Errors.First().Message);
+			_logger.LogError("Order failed with {error}", orderResult.Errors.First().Message);
 		}
 		else
 		{
-			Logger.LogInformation("Order submitted successfully");
+			_logger.LogInformation("Order submitted successfully");
 		}
 	}
 
@@ -183,11 +187,5 @@ public class FvgChaser : IDisposable
 		}
 
 		return new StaticTakeProfit(decimal.Parse(takeProfit));
-	}
-
-	public void Dispose()
-	{
-		_exchangeRestClient.Dispose();
-		_exchangeSocketClient.Dispose();
 	}
 }

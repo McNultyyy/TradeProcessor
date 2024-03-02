@@ -84,9 +84,9 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			throw new NotImplementedException();
 		}
 
-		public void Dispose()
+		public Task<Result<decimal>> GetAccountBalance()
 		{
-			_restClient.Dispose();
+			throw new NotImplementedException();
 		}
 	}
 }

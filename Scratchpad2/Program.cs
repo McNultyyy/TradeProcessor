@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using TradeProcessor.Core;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Exchange;
+using TradeProcessor.Domain.Risk;
 
 var host = Host
 	.CreateDefaultBuilder()
@@ -52,6 +53,11 @@ foreach (var item in dict)
 
 
 var restService = host.Services.GetRequiredService<IExchangeRestClient>();
+
+var riskStrategy = await host.Services.GetRequiredService<RiskStrategyFactory>().GetRisk("1%");
+
+var risk = riskStrategy.Result();
+
 var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, 65);
 
 

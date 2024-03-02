@@ -9,7 +9,7 @@ public record FvgChaserRequest : IApiKeyProperty
 
 	public FvgChaserRequest(string Symbol,
 		string Interval,
-		decimal RiskPerTrade,
+		string RiskPerTrade,
 		string Stoploss,
 		string? TakeProfit, // only the formatted string
 		BiasType Bias,
@@ -28,13 +28,13 @@ public record FvgChaserRequest : IApiKeyProperty
 	public string ApiKey { get; set; }
 	public string Symbol { get; init; }
 	public string Interval { get; init; }
-	public decimal RiskPerTrade { get; init; }
+	public string RiskPerTrade { get; init; }
 	public string Stoploss { get; init; }
 	public string? TakeProfit { get; init; }
 	public BiasType Bias { get; init; }
 	public IEnumerable<GapType>? Gaps { get; init; }
 
-	public void Deconstruct(out string Symbol, out string Interval, out decimal RiskPerTrade, out string Stoploss, out string? TakeProfit, // only the formatted string
+	public void Deconstruct(out string Symbol, out string Interval, out string RiskPerTrade, out string Stoploss, out string? TakeProfit, // only the formatted string
 		out BiasType Bias, out IEnumerable<GapType>? Gaps)
 	{
 		Symbol = this.Symbol;

@@ -12,20 +12,16 @@ namespace TradeProcessor.Infrastructure.HealthChecks
 			_bybitRestClient = bybitRestClient;
 		}
 
-		public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+		public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new())
 		{
-			var isHealthy = _bybitRestClient.DerivativesApi.GetTimeOffset() is not null;
-
+			var isHealthy = await _bybitRestClient.DerivativesApi.ExchangeData.GetServerTimeAsync(cancellationToken);
 
 			if (isHealthy)
 			{
-				return Task.FromResult(
-					HealthCheckResult.Healthy("A healthy result."));
+				return HealthCheckResult.Healthy("A healthy result.");
 			}
 
-			return Task.FromResult(
-				new HealthCheckResult(
-					context.Registration.FailureStatus, "An unhealthy result."));
+			return new HealthCheckResult(context.Registration.FailureStatus, "An unhealthy result.");
 		}
 	}
 }

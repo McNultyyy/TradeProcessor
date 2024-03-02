@@ -179,14 +179,23 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			return Result.Fail("Could not set leverage");
 		}
 
+		public async Task<Result<decimal>> GetAccountBalance()
+		{
+			var result = await _restClient.TradingAccount.GetAccountBalanceAsync();
+
+
+			if (result.Success)
+			{
+				return Result.Ok(result.Data.TotalEquity);
+			}
+
+			return Result.Fail(result.Error.Message);
+
+		}
+
 		private IEnumerable<decimal> AvailableLeverages()
 		{
 			return new[] { 125m, 100, 75m, 50m, 30m, 20m, 10m, 5m, 3m, 2m, 1m };
-		}
-
-		public void Dispose()
-		{
-			// do nothing?
 		}
 	}
 }

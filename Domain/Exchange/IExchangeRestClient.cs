@@ -3,7 +3,7 @@ using TradeProcessor.Domain.Candles;
 
 namespace TradeProcessor.Domain.Exchange
 {
-	public interface IExchangeRestClient : IDisposable
+	public interface IExchangeRestClient
 	{
 		public Task<Result> PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit = null, decimal? stopLoss = null);
 
@@ -12,5 +12,7 @@ namespace TradeProcessor.Domain.Exchange
 		public Task<Result<IEnumerable<Symbol>>> GetSymbols();
 
 		public Task<Result> EnsureMaxCrossLeverage(Symbol symbol);
+
+		public Task<Result<decimal>> GetAccountBalance();
 	}
 }

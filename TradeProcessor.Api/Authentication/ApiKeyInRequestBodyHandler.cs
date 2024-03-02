@@ -32,4 +32,12 @@ public class ApiKeyInRequestBodyHandler : ApiKeyHandlerBase
 
         return string.Empty;
     }
+
+    protected override string GetWwwAuthenticateInParameter()
+    {
+		//todo: review
+
+	    return "";
+	    throw new NotImplementedException();
+    }
 }

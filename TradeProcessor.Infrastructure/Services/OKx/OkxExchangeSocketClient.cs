@@ -42,10 +42,5 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 
 			while (true) { }
 		}
-
-		public void Dispose()
-		{
-			_socketClient.Dispose();
-		}
 	}
 }
