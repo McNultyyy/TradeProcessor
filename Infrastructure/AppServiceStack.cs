@@ -88,7 +88,7 @@ class AppServiceStack : Stack
 			okxKey = Environment.GetEnvironmentVariable("OKX_KEY");
 			okxSecret = Environment.GetEnvironmentVariable("OKX_SECRET");
 			okxPassphrase = Environment.GetEnvironmentVariable("OKX_PASSPHRASE");
-			apiKeys = Environment.GetEnvironmentVariable("OKX_KEY").Split(",");
+			apiKeys = Environment.GetEnvironmentVariable("APIKEYS").Split(",");
 		}
 		else
 		{
