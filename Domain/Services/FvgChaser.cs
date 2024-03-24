@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
@@ -19,7 +18,13 @@ public class FvgChaser
 	private readonly TakeProfitStrategyFactory _takeProfitStrategyFactory;
 	private readonly ILogger<FvgChaser> _logger;
 
-	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory, RiskStrategyFactory riskStrategyFactory, TakeProfitStrategyFactory takeProfitStrategyFactory)
+	public FvgChaser(
+		ILogger<FvgChaser> logger,
+		IExchangeRestClient exchangeRestClient,
+		IExchangeSocketClient exchangeSocketClient,
+		StoplossStrategyFactory stoplossStrategyFactory,
+		RiskStrategyFactory riskStrategyFactory,
+		TakeProfitStrategyFactory takeProfitStrategyFactory)
 	{
 		_logger = logger;
 		_exchangeRestClient = exchangeRestClient;
@@ -51,10 +56,10 @@ public class FvgChaser
 		var dateFromFourTimeUnitsAgo = now - (4 * (intervalTimeSpan.TotalSeconds) * TimeSpan.FromSeconds(1));
 
 		var lastCandles = (await _exchangeRestClient.GetCandles(
-			symbol,
-			intervalTimeSpan,
-			dateFromFourTimeUnitsAgo,
-			now))
+				symbol,
+				intervalTimeSpan,
+				dateFromFourTimeUnitsAgo,
+				now))
 			.Value
 			.ToList();
 
@@ -65,7 +70,6 @@ public class FvgChaser
 		await _exchangeSocketClient.Subscribe(symbol, intervalTimeSpan,
 			async candle =>
 			{
-
 				// todo: add current trade count logic
 
 
@@ -76,7 +80,6 @@ public class FvgChaser
 				var threeCandles = new ThreeCandles(previousPrevious, previous, current);
 				if (threeCandles.TryFindImbalances(out var imbalances))
 				{
-
 					_logger.LogInformation("Found {imbalanceCount} imbalances.",
 						imbalances.Count());
 
@@ -105,7 +108,8 @@ public class FvgChaser
 								? (threeCandles.PreviousPrevious.Low, threeCandles.Current.High)
 								: (threeCandles.PreviousPrevious.High, threeCandles.Current.Low);
 
-							await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade, intervalTimeSpan, (low, high));
+							await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade,
+								intervalTimeSpan, (low, high));
 							currentTradesCount++;
 						}
 						else
@@ -119,19 +123,21 @@ public class FvgChaser
 						_logger.LogInformation(
 							$"Ignoring non-{nameof(GapType.Price)} imbalance.");
 					}
-
 				}
 			});
 	}
 
-	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss, decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan, (decimal low, decimal high) fvg)
+	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss,
+		decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan, (decimal low, decimal high) fvg)
 	{
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
-		var stoplossStrategy = await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan, fvg);
+		var stoplossStrategy =
+			await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan, fvg);
 		var stoplossDecimal = stoplossStrategy.Result();
 
-		var takeProfitStrategy = _takeProfitStrategyFactory.GetTakeProfit(biasType, takeProfit, limitPrice, stoplossStrategy, fvg);
+		var takeProfitStrategy =
+			_takeProfitStrategyFactory.GetTakeProfit(biasType, takeProfit, limitPrice, stoplossStrategy, fvg);
 		var takeProfitDecimal = takeProfitStrategy?.Result() ?? null;
 
 		var riskStrategy = await _riskStrategyFactory.GetRisk(riskPerTrade);
