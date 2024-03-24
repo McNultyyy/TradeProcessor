@@ -50,7 +50,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeProcessor.Batch", "Tra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeProcessor.Api.Contracts", "TradeProcessor.Api.Contracts\TradeProcessor.Api.Contracts.csproj", "{F79177E9-EAA0-402D-9EDA-A6F340E91A9A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeProcessor.Domain.Tets", "TradeProcessor.Domain.Tets\TradeProcessor.Domain.Tets.csproj", "{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeProcessor.Domain.Tets", "TradeProcessor.Domain.Tets\TradeProcessor.Domain.Tets.csproj", "{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "symbol-list-generators", "symbol-list-generators", "{1B350C5E-30E3-46D3-9F7A-368E28BE390F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListGenerator", "ListGenerator\ListGenerator.csproj", "{5C02D14A-ADF2-4132-AF81-09771302B822}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Correlations", "Correlations\Correlations.csproj", "{EC998C06-0307-47F8-AC92-55CAFE18FF13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -110,6 +116,14 @@ Global
 		{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C02D14A-ADF2-4132-AF81-09771302B822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C02D14A-ADF2-4132-AF81-09771302B822}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C02D14A-ADF2-4132-AF81-09771302B822}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C02D14A-ADF2-4132-AF81-09771302B822}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC998C06-0307-47F8-AC92-55CAFE18FF13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC998C06-0307-47F8-AC92-55CAFE18FF13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC998C06-0307-47F8-AC92-55CAFE18FF13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC998C06-0307-47F8-AC92-55CAFE18FF13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -128,6 +142,8 @@ Global
 		{0CFBE4EF-916E-47F4-9DBE-C23A3E776777} = {0A7F8389-7361-47B8-B1CD-F446FF697141}
 		{F79177E9-EAA0-402D-9EDA-A6F340E91A9A} = {0A7F8389-7361-47B8-B1CD-F446FF697141}
 		{6F02879F-16A1-4453-ACB8-FCF00A6D2C6D} = {272DBDE6-B944-4087-9661-DAC81F38D5AB}
+		{5C02D14A-ADF2-4132-AF81-09771302B822} = {1B350C5E-30E3-46D3-9F7A-368E28BE390F}
+		{EC998C06-0307-47F8-AC92-55CAFE18FF13} = {ECD3DF23-26A4-4793-B3F0-98E8829305B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AFFC5A39-AD57-462D-93A9-41BEF1995C63}

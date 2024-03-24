@@ -16,6 +16,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				"60m" or "1H" => OkxPeriod.OneHour,
 				"4H" => OkxPeriod.FourHours,
 				"24H" or "1D" => OkxPeriod.OneDay,
+				"7D" or "1W" => OkxPeriod.OneWeek,
 
 				_ => throw new ArgumentOutOfRangeException(nameof(requestInterval), requestInterval)
 			};

@@ -1,5 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -58,7 +60,13 @@ var riskStrategy = await host.Services.GetRequiredService<RiskStrategyFactory>()
 
 var risk = riskStrategy.Result();
 
-var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, 65);
+var appSettingsJson = JsonSerializer.Deserialize<JsonNode>(
+	File.ReadAllText("C:\\Users\\willi\\Projects\\TradeProcessor\\TradeProcessor.Api\\appsettings.Development.json"),
+	new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+
+var g = appSettingsJson["OKx"]["Key"];
+
+var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, 65, 50);
 
 
 await host.StopAsync();

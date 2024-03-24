@@ -22,7 +22,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			_logger = logger;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit, decimal? stopLoss)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal limitPrice, decimal? takeProfit, decimal? stopLoss)
 		{
 			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
 
@@ -50,12 +50,27 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				 * we should place our limit order.
 				 */
 
-				var diff = Math.Abs(takeProfit.Value - price);
+				var diff = Math.Abs(takeProfit.Value - limitPrice);
 				var percentageOfDiff = diff * 0.30m;
 
 				tpOrderTriggerPrice = bias == BiasType.Bullish ?
-					price + percentageOfDiff :
-					price - percentageOfDiff;
+					limitPrice + percentageOfDiff :
+					limitPrice - percentageOfDiff;
+			}
+
+			decimal? slOrderTriggerPrice = null;
+			if (stopLoss is not null)
+			{
+				/*
+				 * Same as above
+				 */
+
+				var diff = Math.Abs(stopLoss.Value - limitPrice);
+				var percentageOfDiff = diff * 0.30m;
+
+				slOrderTriggerPrice = bias == BiasType.Bullish ?
+					limitPrice - percentageOfDiff :
+					limitPrice + percentageOfDiff;
 			}
 
 			var orderResult = await _restClient.OrderBookTrading.Trade.PlaceOrderAsync(
@@ -66,9 +81,11 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				orderType: OkxOrderType.LimitOrder,
 				quantityType: OkxQuantityType.BaseCurrency,
 				size: quantity,
-				price: price,
+				price: limitPrice,
 				tpOrdPx: takeProfit,
-				tpTriggerPx: tpOrderTriggerPrice);
+				tpTriggerPx: tpOrderTriggerPrice,
+				slOrdPx: stopLoss,
+				slTriggerPx: slOrderTriggerPrice);
 
 			// todo: add take profits
 

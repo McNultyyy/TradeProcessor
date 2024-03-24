@@ -13,6 +13,10 @@
 			if (timeSpan < TimeSpan.FromDays(8))
 				return $"{timeSpan.TotalDays}D";
 
+			// todo: revisit this - kinda dodgy logic
+			if (timeSpan < TimeSpan.FromDays(32))
+				return $"{timeSpan.TotalDays / 7}W";
+
 			throw new ArgumentOutOfRangeException(nameof(timeSpan), timeSpan.ToString());
 		}
 
@@ -40,6 +44,15 @@
 				var integer = int.Parse(requestInterval);
 
 				return TimeSpan.FromDays(integer);
+			}
+
+			// todo: unsure if this works how we expect
+			if (requestInterval.Contains("W"))
+			{
+				requestInterval = requestInterval.Replace("W", "");
+				var integer = int.Parse(requestInterval);
+
+				return TimeSpan.FromDays(integer * 7);
 			}
 
 			throw new ArgumentException($"Cannot parse {requestInterval}", nameof(requestInterval));

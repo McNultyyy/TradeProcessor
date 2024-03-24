@@ -49,3 +49,7 @@ Properties
 *.db
 /prices.db-shm
 /prices.db-wal
+/Correlations/Data
+/ListGenerator/TradingViewAlertsLists
+/ListGenerator/TradingViewLists
+/TradeProcessor.Api/data

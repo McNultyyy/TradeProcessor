@@ -29,6 +29,7 @@ namespace TradeProcessor.Api.Controllers
 				request.Stoploss,
 				request.TakeProfit,
 				request.Bias,
+				request.NumberOfTrades,
 				request.Gaps
 			));
 #pragma warning restore CS4014

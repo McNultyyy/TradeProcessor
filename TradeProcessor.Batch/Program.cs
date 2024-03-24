@@ -1,15 +1,10 @@
-﻿using System.Net.Http.Json;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using TradeProcessor.Api.Contracts;
-using TradeProcessor.Api.Contracts.FvgChaser;
 using TradeProcessor.Core;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
-using TradeProcessor.Domain.Services;
-using TradeProcessor.Infrastructure.DependencyInjection;
 
 var host = Host
 	.CreateDefaultBuilder()

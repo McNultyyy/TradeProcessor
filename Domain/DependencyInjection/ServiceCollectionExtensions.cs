@@ -2,6 +2,7 @@
 using TradeProcessor.Domain.Risk;
 using TradeProcessor.Domain.Services;
 using TradeProcessor.Domain.Stoploss;
+using TradeProcessor.Domain.TakeProfit;
 using TradeProcessor.Domain.TechnicalAnalysis;
 
 namespace TradeProcessor.Domain.DependencyInjection
@@ -15,6 +16,7 @@ namespace TradeProcessor.Domain.DependencyInjection
 			services.AddTransient<AverageTrueRangeProvider>();
 			services.AddTransient<StoplossStrategyFactory>();
 			services.AddTransient<RiskStrategyFactory>();
+			services.AddTransient<TakeProfitStrategyFactory>();
 
 			return services;
 		}

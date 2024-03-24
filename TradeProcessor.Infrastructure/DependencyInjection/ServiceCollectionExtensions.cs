@@ -1,4 +1,7 @@
-﻿using Bybit.Net;
+﻿using ApiSharp.Models;
+using ApiSharp.Throttling;
+using ApiSharp.Throttling.Interfaces;
+using Bybit.Net;
 using CryptoExchange.Net.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -74,7 +77,7 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 					sp.GetRequiredService<ILoggerFactory>().CreateLogger<OKXRestApiClient>(),
 					new OKXRestApiClientOptions()
 					{
-						ApiCredentials = okxApiCredentials,
+						ApiCredentials = okxApiCredentials
 					});
 
 				return okxRestClient;

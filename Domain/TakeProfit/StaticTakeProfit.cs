@@ -2,15 +2,15 @@
 
 public class StaticTakeProfit : ITakeProfit
 {
-    private readonly decimal _result;
+	private readonly decimal _result;
 
-    public StaticTakeProfit(decimal result)
-    {
-        _result = result;
-    }
+	public StaticTakeProfit(decimal result)
+	{
+		_result = result;
+	}
 
-    public decimal Result()
-    {
-        return _result;
-    }
+	public decimal Result()
+	{
+		return _result;
+	}
 }

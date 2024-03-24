@@ -37,6 +37,14 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+            
+          OKX_KEY: ${{ secrets.OKX_KEY }}
+          OKX_SECRET: ${{ secrets.OKX_SECRET }}
+          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
+          BYBIT_KEY: ${{ secrets.BYBIT_KEY }}
+          BYBIT_SECRET: ${{ secrets.BYBIT_SECRET }}
+          APIKEYS: ${{ secrets.APIKEYS }}
+          
   build-and-deploy:
     name: Build and Deploy app
     needs: [setup-infra]

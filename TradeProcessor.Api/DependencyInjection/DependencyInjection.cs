@@ -12,18 +12,30 @@ namespace TradeProcessor.Api.DependencyInjection
 {
 	public static class DependencyInjection
 	{
-		public static IServiceCollection AddTradeProcessorHangfire(this IServiceCollection services)
+		public static IServiceCollection AddTradeProcessorHangfire(this IServiceCollection services, string? connectionString)
 		{
 			services.AddHangfire(x =>
 			{
-				x.UseInMemoryStorage(new InMemoryStorageOptions()
+				if (connectionString is null)
 				{
-					MaxExpirationTime = TimeSpan.FromDays(7) // todo: consider whether we should make this null/infinite
-				});
+					x.UseInMemoryStorage(new InMemoryStorageOptions()
+					{
+						MaxExpirationTime = TimeSpan.FromDays(7) // todo: consider whether we should make this null/infinite
+					});
+				}
+				else
+				{
+					x.UseSqlServerStorage(connectionString);
+				}
+
 				x.UseConsole();
 			});
 
-			services.AddHangfireServer(options => { });
+			services.AddHangfireServer(options =>
+			{
+				// set to Int.MaxValue, but not when running locally otherwise it thread starves the process
+				options.WorkerCount = 5;
+			});
 			services.AddHangfireConsoleExtensions();
 
 			return services;

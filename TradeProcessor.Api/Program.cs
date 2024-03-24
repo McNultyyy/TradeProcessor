@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using Hangfire;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -15,9 +16,11 @@ builder.Services
 	.AddControllers()
 	.AddJsonOptions(x => x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+var hangfireDatabaseConnectionString = builder.Configuration.GetConnectionString("HangfireDatabase");
+
 builder.Services
 	.AddTradeProcessorSwagger()
-	.AddTradeProcessorHangfire()
+	.AddTradeProcessorHangfire(hangfireDatabaseConnectionString)
 	.AddTradeProcessorAuthentication()
 	.AddTradeProcessorAuthorization()
 	.AddTradeProcessorCore(builder.Configuration);
@@ -25,7 +28,8 @@ builder.Services
 builder.Services.AddHealthChecks()
 	.AddCheck("System", () => HealthCheckResult.Healthy())
 	.AddCheck<BybitHealthCheck>("Bybit")
-	.AddCheck<OKxHealthCheck>("OKx");
+	.AddCheck<OKxHealthCheck>("OKx")
+	.AddSqlServer(hangfireDatabaseConnectionString);
 
 var app = builder.Build();
 
@@ -41,18 +45,13 @@ app.UseHttpsRedirection();
 /*
  * Configuring Hangfire Dashboard and Healthchecks are intentionally before the AuthN and AuthZ configuration.
  */
-app.UseHangfireDashboard("/hangfire", new DashboardOptions()
-{
-	Authorization = new List<IDashboardAuthorizationFilter>()
+app.UseHangfireDashboard("/hangfire",
+	new DashboardOptions()
 	{
-		new AllowAllAuthorizationFilter()
-	}
-});
+		Authorization = new List<IDashboardAuthorizationFilter>() {new AllowAllAuthorizationFilter()}
+	});
 
-app.UseHealthChecks("/health", new HealthCheckOptions()
-{
-	ResponseWriter = HealthCheckResponseWriter.Write
-});
+app.UseHealthChecks("/health", new HealthCheckOptions() {ResponseWriter = HealthCheckResponseWriter.Write});
 
 app.UseAuthentication();
 app.UseAuthorization();

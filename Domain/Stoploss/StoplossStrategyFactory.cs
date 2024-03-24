@@ -17,7 +17,7 @@ namespace TradeProcessor.Domain.Stoploss
 			_logger = logger;
 		}
 
-		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice, TimeSpan timeSpan)
+		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice, TimeSpan timeSpan, (decimal low, decimal high) fvg)
 		{
 			var stoplossStrategy = stoploss switch
 			{
@@ -31,6 +31,9 @@ namespace TradeProcessor.Domain.Stoploss
 
 				_ when stoploss.Contains("atr", StringComparison.InvariantCultureIgnoreCase) =>
 					await CreateAtrStoploss(symbol, bias, stoploss, entryPrice, timeSpan),
+
+				_ when stoploss.Contains("fvg") =>
+					CreateFvgStoploss(bias, fvg.low, fvg.high),
 
 				_ => new StaticStoploss(decimal.Parse(stoploss))
 			};
@@ -66,6 +69,11 @@ namespace TradeProcessor.Domain.Stoploss
 				.Replace("-", "");
 
 			return new RelativeStoploss(entryPrice, decimal.Parse(offset), bias == BiasType.Bullish);
+		}
+
+		private static IStoploss CreateFvgStoploss(BiasType bias, decimal fvgLow, decimal fvgHigh)
+		{
+			return new FvgStoploss(fvgLow, fvgHigh, bias.IsBullish());
 		}
 	}
 }

@@ -16,28 +16,30 @@ public class FvgChaser
 	private readonly IExchangeSocketClient _exchangeSocketClient;
 	private readonly StoplossStrategyFactory _stoplossStrategyFactory;
 	private readonly RiskStrategyFactory _riskStrategyFactory;
+	private readonly TakeProfitStrategyFactory _takeProfitStrategyFactory;
 	private readonly ILogger<FvgChaser> _logger;
 
-	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory, RiskStrategyFactory riskStrategyFactory)
+	public FvgChaser(ILogger<FvgChaser> logger, IExchangeRestClient exchangeRestClient, IExchangeSocketClient exchangeSocketClient, StoplossStrategyFactory stoplossStrategyFactory, RiskStrategyFactory riskStrategyFactory, TakeProfitStrategyFactory takeProfitStrategyFactory)
 	{
 		_logger = logger;
 		_exchangeRestClient = exchangeRestClient;
 		_exchangeSocketClient = exchangeSocketClient;
 		_stoplossStrategyFactory = stoplossStrategyFactory;
 		_riskStrategyFactory = riskStrategyFactory;
+		_takeProfitStrategyFactory = takeProfitStrategyFactory;
 	}
 
 	[DisplayName("{5} {0} {1}")] // Used by Hangfire console for JobName
 	public async Task DoWork(Symbol symbol,
 		string interval,
 		string riskPerTrade,
-		string stoploss,
+		string? stoploss,
 		string? takeProfit,
 		BiasType bias,
+		int? numberOfTrades,
 		IEnumerable<GapType> gapTypes)
 	{
 		await _exchangeRestClient.EnsureMaxCrossLeverage(symbol);
-
 
 		int candleCount = 0;
 
@@ -58,69 +60,78 @@ public class FvgChaser
 
 		var (previousPrevious, previous, current) = (lastCandles[^1], lastCandles[^2], lastCandles[^3]);
 
+		var currentTradesCount = 0;
+
 		await _exchangeSocketClient.Subscribe(symbol, intervalTimeSpan,
 			async candle =>
 			{
+
+				// todo: add current trade count logic
+
+
+				previousPrevious = previous with { };
+				previous = current with { };
+				current = candle with { };
+
+				var threeCandles = new ThreeCandles(previousPrevious, previous, current);
+				if (threeCandles.TryFindImbalances(out var imbalances))
 				{
-					previousPrevious = previous with { };
-					previous = current with { };
-					current = candle with { };
 
-					var threeCandles = new ThreeCandles(previousPrevious, previous, current);
-					if (threeCandles.TryFindImbalances(out var imbalances))
+					_logger.LogInformation("Found {imbalanceCount} imbalances.",
+						imbalances.Count());
+
+					foreach (var foundImbalance in imbalances)
 					{
+						_logger.LogInformation("Found imbalance: {imbalance}.",
+							foundImbalance);
+					}
 
-						_logger.LogInformation("Found {imbalanceCount} imbalances.",
-							imbalances.Count());
+					/*
+					 TODO: only focus on the price imbalances for now.
+					 later on we will prioritize which imbalances we should enter on
+					*/
 
-						foreach (var foundImbalance in imbalances)
+					var prioritisedImbalances = imbalances.OrderByGapType();
+					var imbalance = prioritisedImbalances.FirstOrDefault(x => gapTypes.Contains(x.GapType));
+					if (imbalance is not null)
+					{
+						if (imbalance.BiasType == bias)
 						{
-							_logger.LogInformation("Found imbalance: {imbalance}.",
-								foundImbalance);
-						}
+							var limitPrice = imbalance.BiasType == BiasType.Bullish
+								? imbalance.High
+								: imbalance.Low;
 
-						/*
-						 TODO: only focus on the price imbalances for now.
-						 later on we will prioritize which imbalances we should enter on
-						*/
+							(decimal low, decimal high) = bias.IsBullish()
+								? (threeCandles.PreviousPrevious.Low, threeCandles.Current.High)
+								: (threeCandles.PreviousPrevious.High, threeCandles.Current.Low);
 
-						var prioritisedImbalances = imbalances.OrderByGapType();
-						var imbalance = prioritisedImbalances.FirstOrDefault(x => gapTypes.Contains(x.GapType));
-						if (imbalance is not null)
-						{
-							if (imbalance.BiasType == bias)
-							{
-								var limitPrice = imbalance.BiasType == BiasType.Bullish
-									? imbalance.High
-									: imbalance.Low;
-
-								await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade, intervalTimeSpan);
-							}
-							else
-							{
-								_logger.LogInformation(
-									"Imbalance is not in the direction of bias - Ignored.");
-							}
+							await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade, intervalTimeSpan, (low, high));
+							currentTradesCount++;
 						}
 						else
 						{
 							_logger.LogInformation(
-								$"Ignoring non-{nameof(GapType.Price)} imbalance.");
+								"Imbalance is not in the direction of bias - Ignored.");
 						}
 					}
+					else
+					{
+						_logger.LogInformation(
+							$"Ignoring non-{nameof(GapType.Price)} imbalance.");
+					}
+
 				}
 			});
 	}
 
-	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss, decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan)
+	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss, decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan, (decimal low, decimal high) fvg)
 	{
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
-		var stoplossStrategy = await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan);
-		var stoplossDecimal = stoplossStrategy?.Result();
+		var stoplossStrategy = await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan, fvg);
+		var stoplossDecimal = stoplossStrategy.Result();
 
-		var takeProfitStrategy = GetTakeProfit(symbol, limitPrice, biasType, takeProfit, stoplossStrategy);
-		_logger.LogInformation("Using TakeProfitStrategy: {takeProfitStrategy}", takeProfitStrategy?.GetType().ToString());
+		var takeProfitStrategy = _takeProfitStrategyFactory.GetTakeProfit(biasType, takeProfit, limitPrice, stoplossStrategy, fvg);
 		var takeProfitDecimal = takeProfitStrategy?.Result() ?? null;
 
 		var riskStrategy = await _riskStrategyFactory.GetRisk(riskPerTrade);
@@ -128,7 +139,7 @@ public class FvgChaser
 
 		var quantity =
 			Math.Round(
-				risk / Math.Abs(limitPrice - stoplossDecimal.Value),
+				risk / Math.Abs(limitPrice - stoplossDecimal),
 				3); //todo: why is this 3?
 
 		var orderResult = await _exchangeRestClient.PlaceOrder(
@@ -136,7 +147,8 @@ public class FvgChaser
 			biasType,
 			quantity,
 			limitPrice,
-			takeProfitDecimal
+			takeProfitDecimal,
+			stoplossDecimal
 		);
 
 		if (orderResult.IsFailed)
@@ -147,45 +159,5 @@ public class FvgChaser
 		{
 			_logger.LogInformation("Order submitted successfully");
 		}
-	}
-
-
-	private ITakeProfit? GetTakeProfit(Symbol symbol, decimal entryPrice, BiasType bias, string takeProfit, IStoploss? stoplossStrategy)
-	{
-		var stoplossDecimal = (decimal)stoplossStrategy?.Result();
-
-		//////////////
-
-		if (takeProfit is null)
-			return null;
-
-		if (takeProfit.Contains("%"))
-		{
-			var tpString = takeProfit
-				.Replace("+", "")
-				.Replace("-", "")
-				.Replace("%", "");
-
-			return new PercentageTakeProfit(decimal.Parse(tpString), entryPrice, bias == BiasType.Bullish);
-		}
-
-		if (takeProfit.Contains("+") || takeProfit.Contains("-"))
-		{
-			var tpString = takeProfit
-				.Replace("+", "")
-				.Replace("-", "");
-
-			return new RelativeTakeProfit(entryPrice, decimal.Parse(tpString), bias == BiasType.Bullish);
-		}
-
-		if (takeProfit.Contains("R", StringComparison.InvariantCultureIgnoreCase))
-		{
-			var tpString = takeProfit
-				.Replace("R", "");
-
-			return new RiskRewardTakeProfit(entryPrice, stoplossDecimal, decimal.Parse(tpString), bias == BiasType.Bullish);
-		}
-
-		return new StaticTakeProfit(decimal.Parse(takeProfit));
 	}
 }

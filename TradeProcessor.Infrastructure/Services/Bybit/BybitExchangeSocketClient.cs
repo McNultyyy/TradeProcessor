@@ -36,14 +36,8 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 						}
 					});
 
-			while (true)
-			{
-				/*
-				 * We want to keep this instance alive so that we can:
-				 *  1. Stop the job, if necessary, via the Hangfire UI.
-				 *  2. So that the REST and Socket clients do not get disposed.
-				 */
-			}
+			// todo: review the while(true) if things get weird
+
 		}
 	}
 }
