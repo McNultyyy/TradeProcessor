@@ -135,7 +135,8 @@ public class FvgChaser
 				}
 			});
 
-		while (numberOfTrades < currentTradesCount)
+		// todo: ...
+		//while (numberOfTrades < currentTradesCount)
 		{
 			// currentTradeCount is incremented after placing a limit order
 		}
