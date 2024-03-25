@@ -41,6 +41,7 @@ public class FvgChaser
 		string? stoploss,
 		string? takeProfit,
 		BiasType bias,
+		int? numberOfActiveOrders,
 		int? numberOfTrades,
 		IEnumerable<GapType> gapTypes)
 	{
@@ -71,7 +72,6 @@ public class FvgChaser
 			async candle =>
 			{
 				// todo: add current trade count logic
-
 
 				previousPrevious = previous with { };
 				previous = current with { };
@@ -104,13 +104,21 @@ public class FvgChaser
 								? imbalance.High
 								: imbalance.Low;
 
-							(decimal low, decimal high) = bias.IsBullish()
-								? (threeCandles.PreviousPrevious.Low, threeCandles.Current.High)
-								: (threeCandles.PreviousPrevious.High, threeCandles.Current.Low);
+							(decimal low, decimal high) =
+								(threeCandles.PreviousPrevious.Low, threeCandles.Current.High);
 
 							await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade,
 								intervalTimeSpan, (low, high));
-							currentTradesCount++;
+
+							// when numberOfTrades is null it means we want this job to run forever.
+							// so we dont want to increase the currentTradeCount (which will cause the job to end)
+							if (numberOfTrades is not null)
+							{
+								_logger.LogInformation("Incrementing current trades count");
+								currentTradesCount++;
+								_logger.LogInformation("Current trades count is {currentTradesCount}",
+									currentTradesCount);
+							}
 						}
 						else
 						{
@@ -125,6 +133,13 @@ public class FvgChaser
 					}
 				}
 			});
+
+		while (numberOfTrades < currentTradesCount)
+		{
+			// currentTradeCount is incremented after placing a limit order
+		}
+
+		_logger.LogInformation("Number of trades has exceeded {numberOfTrades}", numberOfTrades);
 	}
 
 	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss,

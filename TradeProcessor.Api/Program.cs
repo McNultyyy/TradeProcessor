@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -26,7 +25,8 @@ builder.Services
 	.AddTradeProcessorAuthorization()
 	.AddTradeProcessorCore(builder.Configuration);
 
-builder.Services.AddOpenTelemetry().UseAzureMonitor();
+if (!builder.Environment.IsDevelopment())
+	builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddHealthChecks()
 	.AddCheck("System", () => HealthCheckResult.Healthy())
@@ -35,6 +35,8 @@ builder.Services.AddHealthChecks()
 	.AddSqlServer(hangfireDatabaseConnectionString);
 
 var app = builder.Build();
+
+// todo: Add Recuring Job Cleanup Job
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

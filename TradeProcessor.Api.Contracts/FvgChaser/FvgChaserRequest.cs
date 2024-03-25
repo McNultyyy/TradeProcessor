@@ -2,10 +2,9 @@
 
 namespace TradeProcessor.Api.Contracts.FvgChaser;
 
-
 public record FvgChaserRequest : IApiKeyProperty
 {
-	private static readonly IEnumerable<GapType> DefaultGapType = new[] { GapType.Price };
+	private static readonly IEnumerable<GapType> DefaultGapType = new[] {GapType.Price};
 
 	public FvgChaserRequest(string symbol,
 		string interval,
@@ -13,6 +12,7 @@ public record FvgChaserRequest : IApiKeyProperty
 		string stoploss,
 		string? takeProfit, // only the formatted string
 		BiasType bias,
+		int? numberOfActiveOrders = 0,
 		int? numberOfTrades = 0,
 		IEnumerable<GapType>? gaps = null)
 	{
@@ -22,10 +22,10 @@ public record FvgChaserRequest : IApiKeyProperty
 		Stoploss = stoploss;
 		TakeProfit = takeProfit;
 		Bias = bias;
+		NumberOfActiveOrders = numberOfActiveOrders;
 		NumberOfTrades = numberOfTrades;
 		Gaps = gaps ?? DefaultGapType;
 	}
-
 
 	public string ApiKey { get; set; }
 	public string Symbol { get; init; }
@@ -34,19 +34,7 @@ public record FvgChaserRequest : IApiKeyProperty
 	public string Stoploss { get; init; }
 	public string? TakeProfit { get; init; }
 	public BiasType Bias { get; init; }
+	public int? NumberOfActiveOrders { get; init; }
 	public int? NumberOfTrades { get; init; }
 	public IEnumerable<GapType>? Gaps { get; init; }
-
-	public void Deconstruct(out string symbol, out string interval, out string riskPerTrade, out string stoploss, out string? takeProfit, // only the formatted string
-		out BiasType bias, out int? numberOfTrades, out IEnumerable<GapType>? gaps)
-	{
-		symbol = Symbol;
-		interval = Interval;
-		riskPerTrade = RiskPerTrade;
-		stoploss = Stoploss;
-		takeProfit = TakeProfit;
-		bias = Bias;
-		numberOfTrades = NumberOfTrades;
-		gaps = Gaps;
-	}
 }

@@ -39,8 +39,6 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			 *  1. Stop the job, if necessary, via the Hangfire UI.
 			 *  2. So that the REST and Socket clients do not get disposed until the job is manually killed
 			 */
-
-			while (true) { }
 		}
 	}
 }

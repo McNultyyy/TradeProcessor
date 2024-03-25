@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.Filters;
 using TradeProcessor.Api.Authentication;
 using TradeProcessor.Api.Examples;
+using TradeProcessor.Api.Jobs;
 
 namespace TradeProcessor.Api.DependencyInjection
 {
@@ -38,6 +39,8 @@ namespace TradeProcessor.Api.DependencyInjection
 			});
 			services.AddHangfireConsoleExtensions();
 
+			services.AddTransient<FailedJobsCleanupJob>();
+			
 			return services;
 		}
 

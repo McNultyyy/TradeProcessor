@@ -29,6 +29,7 @@ namespace TradeProcessor.Api.Controllers
 				request.Stoploss,
 				request.TakeProfit,
 				request.Bias,
+				request.NumberOfActiveOrders,
 				request.NumberOfTrades,
 				request.Gaps
 			));
