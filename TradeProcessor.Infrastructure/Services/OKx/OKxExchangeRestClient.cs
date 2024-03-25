@@ -22,11 +22,15 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			_logger = logger;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal limitPrice, decimal? takeProfit, decimal? stopLoss)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity,
+			decimal limitPrice,
+			bool setStoploss,
+			decimal? takeProfit, decimal? stopLoss = null)
 		{
 			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
 
-			var result = await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
+			var result =
+				await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
 			var contractValue = result.Data.First().ContractValue.Value;
 
 			if (quantity % contractValue != 0)
@@ -53,13 +57,15 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				var diff = Math.Abs(takeProfit.Value - limitPrice);
 				var percentageOfDiff = diff * 0.30m;
 
-				tpOrderTriggerPrice = bias == BiasType.Bullish ?
-					limitPrice + percentageOfDiff :
-					limitPrice - percentageOfDiff;
+				tpOrderTriggerPrice = bias == BiasType.Bullish
+					? limitPrice + percentageOfDiff
+					: limitPrice - percentageOfDiff;
+				_logger.LogInformation("Set take profit trigger price to {takeProfitTriggerPrice}",
+					tpOrderTriggerPrice);
 			}
 
 			decimal? slOrderTriggerPrice = null;
-			if (stopLoss is not null)
+			if (stopLoss is not null && setStoploss)
 			{
 				/*
 				 * Same as above
@@ -68,9 +74,10 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				var diff = Math.Abs(stopLoss.Value - limitPrice);
 				var percentageOfDiff = diff * 0.30m;
 
-				slOrderTriggerPrice = bias == BiasType.Bullish ?
-					limitPrice - percentageOfDiff :
-					limitPrice + percentageOfDiff;
+				slOrderTriggerPrice = bias == BiasType.Bullish
+					? limitPrice - percentageOfDiff
+					: limitPrice + percentageOfDiff;
+				_logger.LogInformation("Set stop loss trigger price to {stopLossTriggerPrice}", slOrderTriggerPrice);
 			}
 
 			var orderResult = await _restClient.OrderBookTrading.Trade.PlaceOrderAsync(
@@ -95,7 +102,8 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			return Result.Fail(orderResult.Error.Message);
 		}
 
-		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from, DateTime to)
+		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from,
+			DateTime to)
 		{
 			var okxPeriod = OKxHelper.MapToKlineInterval(interval);
 
@@ -105,7 +113,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				to.ConvertToMilliseconds(),
 				from.ConvertToMilliseconds(),
 				limit: 300
-				);
+			);
 
 			if (result.Success)
 			{
@@ -135,7 +143,8 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				return Result.Fail(result.Error.Message);
 		}
 
-		private static IEnumerable<Candle> ConvertToCandles(Symbol symbol, TimeSpan interval, RestCallResult<IEnumerable<OkxCandlestick>> result)
+		private static IEnumerable<Candle> ConvertToCandles(Symbol symbol, TimeSpan interval,
+			RestCallResult<IEnumerable<OkxCandlestick>> result)
 		{
 			var lastCandles = result
 				.Data
@@ -171,7 +180,8 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 		{
 			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
 
-			var result = await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
+			var result =
+				await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
 			if (!result.Success)
 			{
 				return Result.Fail(result.Error.Message);
@@ -180,7 +190,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			var maxLeverage = result.Data.First().MaximumLeverage.Value;
 
 			_logger.LogInformation("Attempting to set {symbol} leverage to {leverage}",
-					symbol.ToString(), maxLeverage);
+				symbol.ToString(), maxLeverage);
 
 			var setLeverageResult = await _restClient.TradingAccount.SetAccountLeverageAsync(
 				maxLeverage,
@@ -207,12 +217,11 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			}
 
 			return Result.Fail(result.Error.Message);
-
 		}
 
 		private IEnumerable<decimal> AvailableLeverages()
 		{
-			return new[] { 125m, 100, 75m, 50m, 30m, 20m, 10m, 5m, 3m, 2m, 1m };
+			return new[] {125m, 100, 75m, 50m, 30m, 20m, 10m, 5m, 3m, 2m, 1m};
 		}
 	}
 }

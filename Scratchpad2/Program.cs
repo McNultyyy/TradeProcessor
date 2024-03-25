@@ -16,7 +16,6 @@ var host = Host
 	{
 		services.AddTradeProcessorCore(context.Configuration);
 		services.AddLogging(l => l.AddConsole());
-
 	})
 	.Build();
 
@@ -62,11 +61,11 @@ var risk = riskStrategy.Result();
 
 var appSettingsJson = JsonSerializer.Deserialize<JsonNode>(
 	File.ReadAllText("C:\\Users\\willi\\Projects\\TradeProcessor\\TradeProcessor.Api\\appsettings.Development.json"),
-	new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+	new JsonSerializerOptions {ReadCommentHandling = JsonCommentHandling.Skip});
 
 var g = appSettingsJson["OKx"]["Key"];
 
-var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, 65, 50);
+var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, true, 65, 50);
 
 
 await host.StopAsync();

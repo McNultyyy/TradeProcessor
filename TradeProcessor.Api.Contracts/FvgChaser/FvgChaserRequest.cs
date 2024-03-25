@@ -10,6 +10,7 @@ public record FvgChaserRequest : IApiKeyProperty
 		string interval,
 		string riskPerTrade,
 		string stoploss,
+		bool setStoploss,
 		string? takeProfit, // only the formatted string
 		BiasType bias,
 		int? numberOfActiveOrders = 0,
@@ -32,6 +33,7 @@ public record FvgChaserRequest : IApiKeyProperty
 	public string Interval { get; init; }
 	public string RiskPerTrade { get; init; }
 	public string Stoploss { get; init; }
+	public bool SetStoploss { get; init; } = true;
 	public string? TakeProfit { get; init; }
 	public BiasType Bias { get; init; }
 	public int? NumberOfActiveOrders { get; init; }

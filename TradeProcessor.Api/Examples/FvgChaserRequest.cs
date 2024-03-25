@@ -8,7 +8,7 @@ namespace TradeProcessor.Api.Examples
 	{
 		public FvgChaserRequest GetExamples()
 		{
-			return new FvgChaserRequest("BTCUSDT", "5m", "50", "1%", null, BiasType.Bullish );
+			return new FvgChaserRequest("BTCUSDT", "5m", "50", "1%", true, null, BiasType.Bullish);
 		}
 	}
 }

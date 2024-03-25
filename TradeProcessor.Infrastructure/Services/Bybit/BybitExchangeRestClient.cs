@@ -16,7 +16,9 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			_restClient = restClient;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, decimal? takeProfit, decimal? stopLoss)
+		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price,
+			bool setStoploss,
+			decimal? takeProfit, decimal? stopLoss = null)
 		{
 			var orderResult = await _restClient.DerivativesApi.ContractApi.Trading.PlaceOrderAsync(
 				BybitHelper.ToBybitSymbol(symbol),

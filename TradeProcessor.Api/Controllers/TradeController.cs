@@ -27,6 +27,7 @@ namespace TradeProcessor.Api.Controllers
 				request.Interval,
 				request.RiskPerTrade,
 				request.Stoploss,
+				request.SetStoploss,
 				request.TakeProfit,
 				request.Bias,
 				request.NumberOfActiveOrders,

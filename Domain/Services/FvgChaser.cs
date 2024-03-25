@@ -39,6 +39,7 @@ public class FvgChaser
 		string interval,
 		string riskPerTrade,
 		string? stoploss,
+		bool setStoploss,
 		string? takeProfit,
 		BiasType bias,
 		int? numberOfActiveOrders,
@@ -108,7 +109,7 @@ public class FvgChaser
 								(threeCandles.PreviousPrevious.Low, threeCandles.Current.High);
 
 							await PlaceLimitOrder(symbol, bias, takeProfit, stoploss, limitPrice, riskPerTrade,
-								intervalTimeSpan, (low, high));
+								intervalTimeSpan, (low, high), setStoploss);
 
 							// when numberOfTrades is null it means we want this job to run forever.
 							// so we dont want to increase the currentTradeCount (which will cause the job to end)
@@ -143,7 +144,8 @@ public class FvgChaser
 	}
 
 	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss,
-		decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan, (decimal low, decimal high) fvg)
+		decimal limitPrice, string riskPerTrade, TimeSpan intervalTimeSpan, (decimal low, decimal high) fvg,
+		bool setStoploss)
 	{
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
@@ -168,6 +170,7 @@ public class FvgChaser
 			biasType,
 			quantity,
 			limitPrice,
+			setStoploss,
 			takeProfitDecimal,
 			stoplossDecimal
 		);

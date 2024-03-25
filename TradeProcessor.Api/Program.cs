@@ -26,7 +26,10 @@ builder.Services
 	.AddTradeProcessorCore(builder.Configuration);
 
 if (!builder.Environment.IsDevelopment())
+{
+	builder.Services.AddApplicationInsightsTelemetry();
 	builder.Services.AddOpenTelemetry().UseAzureMonitor();
+}
 
 builder.Services.AddHealthChecks()
 	.AddCheck("System", () => HealthCheckResult.Healthy())
