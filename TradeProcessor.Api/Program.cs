@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Hangfire;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -24,6 +25,8 @@ builder.Services
 	.AddTradeProcessorAuthentication()
 	.AddTradeProcessorAuthorization()
 	.AddTradeProcessorCore(builder.Configuration);
+
+builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddHealthChecks()
 	.AddCheck("System", () => HealthCheckResult.Healthy())

@@ -116,7 +116,7 @@ class AppServiceStack : Stack
 				{"APPINSIGHTS_INSTRUMENTATIONKEY", appInsights.InstrumentationKey},
 				{
 					"APPLICATIONINSIGHTS_CONNECTION_STRING",
-					appInsights.InstrumentationKey.Apply(key => $"InstrumentationKey={key}")
+					appInsights.ConnectionString.Apply(key => key)
 				},
 				{"ApplicationInsightsAgent_EXTENSION_VERSION", "~2"},
 				{"Exchange", "OKx"},
