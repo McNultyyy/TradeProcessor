@@ -91,8 +91,8 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				price: limitPrice,
 				tpOrdPx: takeProfit,
 				tpTriggerPx: tpOrderTriggerPrice,
-				slOrdPx: stopLoss,
-				slTriggerPx: slOrderTriggerPrice);
+				slOrdPx: setStoploss ? stopLoss : null,
+				slTriggerPx: setStoploss ? slOrderTriggerPrice : null);
 
 			// todo: add take profits
 

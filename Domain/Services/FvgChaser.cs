@@ -34,7 +34,7 @@ public class FvgChaser
 		_takeProfitStrategyFactory = takeProfitStrategyFactory;
 	}
 
-	[DisplayName("{5} {0} {1}")] // Used by Hangfire console for JobName
+	[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
 	public async Task DoWork(Symbol symbol,
 		string interval,
 		string riskPerTrade,
