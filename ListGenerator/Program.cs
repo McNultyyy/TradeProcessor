@@ -10,10 +10,14 @@ Console.WriteLine("Starting ...");
 var smtGenerator = new CryptoPerpSMTTradingViewListGenerator();
 await smtGenerator.GenerateAsync();
 
-throw new Exception("Stop");
+var fundingRateGenerator = new CryptoFundingRateTradingViewListGenerator();
+await fundingRateGenerator.GenerateAsync();
+
+System.Environment.Exit(0);
 
 var tradingViewListOutputPath = "C:\\Users\\willi\\Projects\\TradeProcessor\\ListGenerator\\TradingViewLists";
-var tradingViewAlertsListOutputPath = "C:\\Users\\willi\\Projects\\TradeProcessor\\ListGenerator\\TradingViewAlertsLists";
+var tradingViewAlertsListOutputPath =
+	"C:\\Users\\willi\\Projects\\TradeProcessor\\ListGenerator\\TradingViewAlertsLists";
 
 var coinGeckoApi = new CoinGeckoRestClient();
 var g = await coinGeckoApi.Api.GetAssetPlatformsAsync();
