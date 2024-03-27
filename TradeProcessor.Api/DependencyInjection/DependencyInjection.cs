@@ -13,7 +13,8 @@ namespace TradeProcessor.Api.DependencyInjection
 {
 	public static class DependencyInjection
 	{
-		public static IServiceCollection AddTradeProcessorHangfire(this IServiceCollection services, string? connectionString)
+		public static IServiceCollection AddTradeProcessorHangfire(this IServiceCollection services,
+			string? connectionString)
 		{
 			services.AddHangfire(x =>
 			{
@@ -21,7 +22,8 @@ namespace TradeProcessor.Api.DependencyInjection
 				{
 					x.UseInMemoryStorage(new InMemoryStorageOptions()
 					{
-						MaxExpirationTime = TimeSpan.FromDays(7) // todo: consider whether we should make this null/infinite
+						MaxExpirationTime =
+							TimeSpan.FromDays(7) // todo: consider whether we should make this null/infinite
 					});
 				}
 				else
@@ -35,12 +37,14 @@ namespace TradeProcessor.Api.DependencyInjection
 			services.AddHangfireServer(options =>
 			{
 				// set to Int.MaxValue, but not when running locally otherwise it thread starves the process
-				options.WorkerCount = 5;
+				options.WorkerCount = connectionString is not null // having the connection string assumes we're not local 
+					? Int32.MaxValue
+					: 5;
 			});
 			services.AddHangfireConsoleExtensions();
 
 			services.AddTransient<FailedJobsCleanupJob>();
-			
+
 			return services;
 		}
 
@@ -50,8 +54,7 @@ namespace TradeProcessor.Api.DependencyInjection
 			{
 				var authenticationSchemes = new[]
 				{
-					AuthenticationSchemes.ApiKeyInHeader,
-					AuthenticationSchemes.ApiKeyInQuery,
+					AuthenticationSchemes.ApiKeyInHeader, AuthenticationSchemes.ApiKeyInQuery,
 					AuthenticationSchemes.ApiKeyInRequest
 				};
 
