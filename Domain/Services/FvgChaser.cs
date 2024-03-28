@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 using TradeProcessor.Domain.Helpers;
+using TradeProcessor.Domain.Logging;
 using TradeProcessor.Domain.Risk;
 using TradeProcessor.Domain.Stoploss;
 using TradeProcessor.Domain.TakeProfit;
@@ -46,6 +47,12 @@ public class FvgChaser
 		int? numberOfTrades,
 		IEnumerable<GapType> gapTypes)
 	{
+		using var _ = _logger.BeginScopeWith(new
+		{
+			Symbol = symbol.ToString(),
+			BiasType = bias.ToString()
+		});
+
 		await _exchangeRestClient.EnsureMaxCrossLeverage(symbol);
 
 		int candleCount = 0;

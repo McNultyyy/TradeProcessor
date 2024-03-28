@@ -37,13 +37,12 @@ namespace TradeProcessor.Api.DependencyInjection
 			services.AddHangfireServer(options =>
 			{
 				// set to Int.MaxValue, but not when running locally otherwise it thread starves the process
-				options.WorkerCount = connectionString is not null // having the connection string assumes we're not local 
-					? Int32.MaxValue
-					: 5;
+				if (connectionString is not null)
+					options.WorkerCount = Int32.MaxValue;
 			});
 			services.AddHangfireConsoleExtensions();
 
-			services.AddTransient<FailedJobsCleanupJob>();
+			//services.AddTransient<FailedJobsCleanupJob>();
 
 			return services;
 		}
