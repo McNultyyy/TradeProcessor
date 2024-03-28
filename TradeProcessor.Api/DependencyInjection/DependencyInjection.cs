@@ -3,6 +3,7 @@ using Hangfire;
 using Hangfire.Console;
 using Hangfire.Console.Extensions;
 using Hangfire.InMemory;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.Filters;
 using TradeProcessor.Api.Authentication;
@@ -28,7 +29,8 @@ namespace TradeProcessor.Api.DependencyInjection
 				}
 				else
 				{
-					x.UseSqlServerStorage(connectionString);
+					x.UseSqlServerStorage(connectionString,
+						new SqlServerStorageOptions {PrepareSchemaIfNecessary = true});
 				}
 
 				x.UseConsole();
