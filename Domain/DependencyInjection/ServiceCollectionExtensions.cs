@@ -12,6 +12,7 @@ namespace TradeProcessor.Domain.DependencyInjection
 		public static IServiceCollection AddTradeProcessorDomain(this IServiceCollection services)
 		{
 			services.AddTransient<FvgChaser>();
+			services.AddTransient<PDArrayFinder>();
 
 			services.AddTransient<AverageTrueRangeProvider>();
 			services.AddTransient<StoplossStrategyFactory>();

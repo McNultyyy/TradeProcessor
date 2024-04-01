@@ -9,6 +9,8 @@ using TradeProcessor.Core;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Exchange;
 using TradeProcessor.Domain.Risk;
+using TradeProcessor.Domain.Services;
+using TradeProcessor.Domain.Stoploss;
 
 var host = Host
 	.CreateDefaultBuilder()
@@ -21,51 +23,54 @@ var host = Host
 
 await host.StartAsync();
 
-/*
-var client = host.Services.GetRequiredService<OKXRestApiClient>();
-
-var allSymbols = (await client.OrderBookTrading.MarketData.GetTickersAsync(OKX.Api.Enums.OkxInstrumentType.Swap))
-	.Data
-	.OrderByDescending(x => x.Volume)
-	.Select(x => x.Instrument)
-	.Take(5);
-
-var dict = new Dictionary<string, List<(DateTime date, decimal price)>>();
-
-foreach (var symbol in allSymbols)
-{
-	var history = await client.OrderBookTrading.MarketData.GetCandlesticksHistoryAsync(symbol, OKX.Api.Enums.OkxPeriod.OneDay, DateTimeOffset.UtcNow.AddMonths(-12).ToUnixTimeMilliseconds());
-
-	dict.Add(symbol, history.Data.Select(x => (x.Time, x.Close)).ToList());
-}
-
-
-
-var records = new List<dynamic>();
-
-foreach (var item in dict)
-{
-	dynamic recordItem = new ExpandoObject();
-
-	recordItem.Date = item.Key;
-}
-
-*/
-
-
 var restService = host.Services.GetRequiredService<IExchangeRestClient>();
+var pdFinder = host.Services.GetRequiredService<PDArrayFinder>();
+var stopLossStrategyFactory = host.Services.GetRequiredService<StoplossStrategyFactory>();
+var riskStrategyFactory = host.Services.GetRequiredService<RiskStrategyFactory>();
 
-var riskStrategy = await host.Services.GetRequiredService<RiskStrategyFactory>().GetRisk("1%");
+var symbols = (await restService.GetSymbols()).Value.Take(50);
+var interval = TimeSpan.FromDays(1);
 
-var risk = riskStrategy.Result();
+await restService.CancelAllOrders();
 
-var appSettingsJson = JsonSerializer.Deserialize<JsonNode>(
-	File.ReadAllText("C:\\Users\\willi\\Projects\\TradeProcessor\\TradeProcessor.Api\\appsettings.Development.json"),
-	new JsonSerializerOptions {ReadCommentHandling = JsonCommentHandling.Skip});
+try
+{
+	foreach (var symbol in symbols)
+	{
+		var pivots = (await pdFinder.Find(symbol, interval)).Take(50);
 
-var g = appSettingsJson["OKx"]["Key"];
+		var closestPivots = new[]
+		{
+			pivots.FirstOrDefault(x => x.biasType is BiasType.Bearish),
+			pivots.FirstOrDefault(x => x.biasType is BiasType.Bullish)
+		}.Where(x => x != default);
 
-var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, true, 65, 50);
+		foreach (var pivot in closestPivots)
+		{
+			var stoplossStrategy =
+				await stopLossStrategyFactory.GetStoploss(symbol, pivot.biasType, "3atr", pivot.price, interval, null);
+			var stoplossDecimal = stoplossStrategy.Result();
 
+			var riskStrategy = await riskStrategyFactory.GetRisk("20");
+			var risk = riskStrategy.Result();
+
+			var quantity =
+				Math.Round(
+					risk / Math.Abs(pivot.price - stoplossDecimal),
+					3); //todo: why is this 3?
+
+			var result =
+				await restService.PlaceOrder(symbol, pivot.biasType, quantity, pivot.price, false, null,
+					stoplossDecimal);
+		}
+	}
+}
+catch (Exception ex)
+{
+	var g = "";
+}
+
+
+//var result = await restService.PlaceOrder(new Symbol("SOL", "USDT"), BiasType.Bullish, 10, 55, true, 65, 50);
 
 await host.StopAsync();

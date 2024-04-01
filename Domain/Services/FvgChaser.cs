@@ -47,11 +47,10 @@ public class FvgChaser
 		int? numberOfTrades,
 		IEnumerable<GapType> gapTypes)
 	{
-		using var _ = _logger.BeginScopeWith(new
-		{
-			Symbol = symbol.ToString(),
-			BiasType = bias.ToString()
-		});
+		using var _ = _logger.BeginScopeWith(
+			("Symbol", symbol.ToString()), 
+			("BiasType", bias.ToString())
+		);
 
 		await _exchangeRestClient.EnsureMaxCrossLeverage(symbol);
 

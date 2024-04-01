@@ -11,13 +11,15 @@ namespace TradeProcessor.Domain.Stoploss
 
 		private const string AtrRegex = "([0-9])atr";
 
-		public StoplossStrategyFactory(AverageTrueRangeProvider averageTrueRangeProvider, ILogger<StoplossStrategyFactory> logger)
+		public StoplossStrategyFactory(AverageTrueRangeProvider averageTrueRangeProvider,
+			ILogger<StoplossStrategyFactory> logger)
 		{
 			_averageTrueRangeProvider = averageTrueRangeProvider;
 			_logger = logger;
 		}
 
-		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice, TimeSpan timeSpan, (decimal low, decimal high) fvg)
+		public async Task<IStoploss> GetStoploss(Symbol symbol, BiasType bias, string? stoploss, decimal entryPrice,
+			TimeSpan timeSpan, (decimal low, decimal high)? fvg)
 		{
 			var stoplossStrategy = stoploss switch
 			{
@@ -33,17 +35,19 @@ namespace TradeProcessor.Domain.Stoploss
 					await CreateAtrStoploss(symbol, bias, stoploss, entryPrice, timeSpan),
 
 				_ when stoploss.Contains("fvg") =>
-					CreateFvgStoploss(bias, fvg.low, fvg.high),
+					CreateFvgStoploss(bias, fvg.Value.low, fvg.Value.high), // todo: assume its not null at this point
 
 				_ => new StaticStoploss(decimal.Parse(stoploss))
 			};
 
-			_logger.LogInformation("Using StoplossStrategy: {stopLossStrategy}", stoplossStrategy?.GetType().ToString());
+			_logger.LogInformation("Using StoplossStrategy: {stopLossStrategy}",
+				stoplossStrategy?.GetType().ToString());
 
 			return stoplossStrategy;
 		}
 
-		private async Task<IStoploss> CreateAtrStoploss(Symbol symbol, BiasType bias, string stoploss, decimal entryPrice,
+		private async Task<IStoploss> CreateAtrStoploss(Symbol symbol, BiasType bias, string stoploss,
+			decimal entryPrice,
 			TimeSpan timeSpan)
 		{
 			var atrMultiplier = int.Parse(Regex.Match(stoploss, AtrRegex).Groups[1].Value);

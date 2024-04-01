@@ -22,25 +22,11 @@ namespace TradeProcessor.Domain.TechnicalAnalysis
 
 			var candles = (await _exchangeRestClient.GetCandles(symbol, timeSpan, from, to)).Value;
 
-			var atrs = candles.Select(ToQuote).GetAtr(AtrLookbackPeriod).Condense();
+			var atrs = candles.Select(x => x.ToQuote()).GetAtr(AtrLookbackPeriod).Condense();
 
 			//get most recent ATR
-			return (decimal)atrs.MaxBy(x => x.Date).Atr.Value;
-		}
-
-		private Quote ToQuote(Candle candle)
-		{
-			return new Quote()
-			{
-				Open = candle.Open,
-				High = candle.High,
-				Low = candle.Low,
-				Close = candle.Close,
-
-				// todo: add volume??
-
-				Date = candle.OpenDateTime,
-			};
+			var atr = (decimal)atrs.MaxBy(x => x.Date).Atr.Value;
+			return atr;
 		}
 	}
 }

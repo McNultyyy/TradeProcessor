@@ -1,7 +1,21 @@
-﻿namespace TradeProcessor.Domain.Candles
+﻿using Skender.Stock.Indicators;
+
+namespace TradeProcessor.Domain.Candles
 {
 	public static class CandleExtensions
 	{
+		public static IQuote ToQuote(this ICandle candle)
+		{
+			return new Quote
+			{
+				Open = candle.Open,
+				High = candle.High,
+				Low = candle.Low,
+				Close = candle.Close,
+				Date = candle.OpenDateTime
+			};
+		}
+
 		public static TimeSpan GetInterval(this ICandle candle)
 		{
 			return candle.CloseDateTime - candle.OpenDateTime;

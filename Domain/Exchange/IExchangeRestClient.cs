@@ -14,5 +14,7 @@ namespace TradeProcessor.Domain.Exchange
 		public Task<Result> EnsureMaxCrossLeverage(Symbol symbol);
 
 		public Task<Result<decimal>> GetAccountBalance();
+
+		public Task<Result> CancelAllOrders();
 	}
 }

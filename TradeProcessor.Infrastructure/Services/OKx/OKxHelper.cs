@@ -13,6 +13,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				"1m" => OkxPeriod.OneMinute,
 				"5m" => OkxPeriod.FiveMinutes,
 				"15m" => OkxPeriod.FifteenMinutes,
+				"30m" => OkxPeriod.ThirtyMinutes,
 				"60m" or "1H" => OkxPeriod.OneHour,
 				"4H" => OkxPeriod.FourHours,
 				"24H" or "1D" => OkxPeriod.OneDay,
@@ -42,7 +43,11 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 		{
 			var parts = okxSymbol.Split("-");
 
-			return new Symbol(parts[0], parts[1]);
+			// todo: refactor?
+			// kinda hacky but we always assume that any USD denominated pair is actually USDT
+			var quote = okxSymbol.Contains("USD-SWAP") ? "USDT" : parts[1];
+
+			return new Symbol(parts[0], quote);
 		}
 	}
 }

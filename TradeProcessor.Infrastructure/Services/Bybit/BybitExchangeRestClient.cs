@@ -90,5 +90,10 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 		{
 			throw new NotImplementedException();
 		}
+
+		public Task<Result> CancelAllOrders()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

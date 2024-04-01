@@ -5,12 +5,18 @@ namespace TradeProcessor.Domain.Logging;
 
 public static class LoggingExtensions
 {
-	public static IDisposable? BeginScopeWith(this ILogger logger, object anonymousObject)
+	public static IDisposable BeginScopeWith(this ILogger logger, object anonymousObject)
 	{
 		return logger.BeginScope(anonymousObject.ToDictionary());
 	}
 
-	private static IEnumerable<KeyValuePair<string, object>> ToDictionary(this object values)
+	public static IDisposable BeginScopeWith(this ILogger logger, params (string, string)[] properties)
+	{
+		var dictionary = properties.ToDictionary(p => p.Item1, p => p.Item2)!;
+		return logger.BeginScope(dictionary);
+	} 
+
+	private static IDictionary<string, object> ToDictionary(this object values)
 	{
 		var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
@@ -23,6 +29,6 @@ public static class LoggingExtensions
 			}
 		}
 
-		return dict.Select(x => new KeyValuePair<string, object>(x.Key, x.Value));
+		return dict;
 	}
 }
