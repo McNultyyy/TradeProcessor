@@ -13,7 +13,7 @@ namespace TradeProcessor.Domain.TakeProfit
 		}
 
 		public ITakeProfit? GetTakeProfit(BiasType bias, string? takeProfit, decimal entryPrice,
-			IStoploss? stoplossStrategy, (decimal low, decimal high) fvg)
+			IStoploss? stoplossStrategy, (decimal low, decimal high)? fvg)
 		{
 			var takeProfitStrategy = takeProfit switch
 			{
@@ -29,7 +29,7 @@ namespace TradeProcessor.Domain.TakeProfit
 					CreateRiskRewardTakeProfit(bias, entryPrice, stoplossStrategy.Result(), takeProfit),
 
 				_ when takeProfit.Contains("fvg") =>
-					CreateFvgTakeProfit(bias, fvg.low, fvg.high),
+					CreateFvgTakeProfit(bias, fvg.Value.low, fvg.Value.high),
 
 				_ when !String.IsNullOrEmpty(takeProfit)
 					=> new StaticTakeProfit(decimal.Parse(takeProfit)),

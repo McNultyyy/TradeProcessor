@@ -20,3 +20,10 @@ public enum GapType
 	Liquidity,
 	Opening
 }
+
+public enum FvgEntryType
+{
+	Premium,
+	Discount,
+	Midpoint
+}

@@ -32,7 +32,9 @@ namespace TradeProcessor.Api.Controllers
 				request.Bias,
 				request.NumberOfActiveOrders,
 				request.NumberOfTrades,
-				request.Gaps
+				request.Gaps,
+				request.EntryType,
+				CancellationToken.None // https://docs.hangfire.io/en/latest/background-methods/using-cancellation-tokens.html
 			));
 #pragma warning restore CS4014
 

@@ -14,25 +14,19 @@ public class FvgChaser
 {
 	private readonly IExchangeRestClient _exchangeRestClient;
 	private readonly IExchangeSocketClient _exchangeSocketClient;
-	private readonly StoplossStrategyFactory _stoplossStrategyFactory;
-	private readonly RiskStrategyFactory _riskStrategyFactory;
-	private readonly TakeProfitStrategyFactory _takeProfitStrategyFactory;
+	private readonly TradeParser _tradeParser;
 	private readonly ILogger<FvgChaser> _logger;
 
 	public FvgChaser(
 		ILogger<FvgChaser> logger,
 		IExchangeRestClient exchangeRestClient,
 		IExchangeSocketClient exchangeSocketClient,
-		StoplossStrategyFactory stoplossStrategyFactory,
-		RiskStrategyFactory riskStrategyFactory,
-		TakeProfitStrategyFactory takeProfitStrategyFactory)
+		TradeParser tradeParser)
 	{
 		_logger = logger;
 		_exchangeRestClient = exchangeRestClient;
 		_exchangeSocketClient = exchangeSocketClient;
-		_stoplossStrategyFactory = stoplossStrategyFactory;
-		_riskStrategyFactory = riskStrategyFactory;
-		_takeProfitStrategyFactory = takeProfitStrategyFactory;
+		_tradeParser = tradeParser;
 	}
 
 	[DisplayName("{6} {0} {1}")] // Used by Hangfire console for JobName
@@ -45,12 +39,14 @@ public class FvgChaser
 		BiasType bias,
 		int? numberOfActiveOrders,
 		int? numberOfTrades,
-		IEnumerable<GapType> gapTypes)
+		IEnumerable<GapType> gapTypes,
+		FvgEntryType fvgEntryType,
+		CancellationToken cancellationToken)
 	{
-		using var _ = _logger.BeginScopeWith(
-			("Symbol", symbol.ToString()), 
-			("BiasType", bias.ToString())
-		);
+		using var _ = _logger.BeginScopeWith(new {Symbol = symbol, Bias = bias});
+
+		_logger.LogInformation("Running {biasType} {serviceName for {symbol}",
+			bias, nameof(FvgChaser), symbol);
 
 		await _exchangeRestClient.EnsureMaxCrossLeverage(symbol);
 
@@ -87,14 +83,8 @@ public class FvgChaser
 				var threeCandles = new ThreeCandles(previousPrevious, previous, current);
 				if (threeCandles.TryFindImbalances(out var imbalances))
 				{
-					_logger.LogInformation("Found {imbalanceCount} imbalances.",
-						imbalances.Count());
-
-					foreach (var foundImbalance in imbalances)
-					{
-						_logger.LogInformation("Found imbalance: {imbalance}.",
-							foundImbalance);
-					}
+					_logger.LogInformation("Found {imbalanceCount} imbalances of type {imbalanceTypes}",
+						imbalances.Count(), String.Join(",", imbalances));
 
 					/*
 					 TODO: only focus on the price imbalances for now.
@@ -107,9 +97,7 @@ public class FvgChaser
 					{
 						if (imbalance.BiasType == bias)
 						{
-							var limitPrice = imbalance.BiasType == BiasType.Bullish
-								? imbalance.High
-								: imbalance.Low;
+							var limitPrice = CalculateFvgEntryPrice(imbalance, fvgEntryType);
 
 							(decimal low, decimal high) =
 								(threeCandles.PreviousPrevious.Low, threeCandles.Current.High);
@@ -136,18 +124,36 @@ public class FvgChaser
 					else
 					{
 						_logger.LogInformation(
-							$"Ignoring non-{nameof(GapType.Price)} imbalance.");
+							$"Ignoring imbalance.");
 					}
 				}
 			});
 
-		// todo: ...
-		//while (numberOfTrades < currentTradesCount)
+		while (!cancellationToken.IsCancellationRequested)
 		{
-			// currentTradeCount is incremented after placing a limit order
+			// do nothing
 		}
 
-		_logger.LogInformation("Number of trades has exceeded {numberOfTrades}", numberOfTrades);
+		_logger.LogInformation("Cancellation has been requested = {isCancellationRequested}." +
+		                       "Shutting down.",
+			cancellationToken.IsCancellationRequested);
+	}
+
+	private decimal CalculateFvgEntryPrice(IImbalance imbalance, FvgEntryType fvgEntryType)
+	{
+		_logger.LogInformation("Using entry type of {entryType}", fvgEntryType);
+
+		return fvgEntryType switch
+		{
+			FvgEntryType.Premium =>
+				imbalance.BiasType == BiasType.Bullish ? imbalance.High : imbalance.Low,
+			FvgEntryType.Discount =>
+				imbalance.BiasType == BiasType.Bullish ? imbalance.Low : imbalance.High,
+			FvgEntryType.Midpoint =>
+				(imbalance.High + imbalance.Low) / 2, // todo: see whether we need to round
+
+			_ => throw new ArgumentOutOfRangeException(nameof(fvgEntryType), fvgEntryType, null)
+		};
 	}
 
 	async Task PlaceLimitOrder(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss,
@@ -156,31 +162,11 @@ public class FvgChaser
 	{
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
-		var stoplossStrategy =
-			await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, intervalTimeSpan, fvg);
-		var stoplossDecimal = stoplossStrategy.Result();
+		var trade = await _tradeParser.Parse(symbol, biasType, takeProfit, stoploss, limitPrice, riskPerTrade,
+			intervalTimeSpan,
+			setStoploss, fvg);
 
-		var takeProfitStrategy =
-			_takeProfitStrategyFactory.GetTakeProfit(biasType, takeProfit, limitPrice, stoplossStrategy, fvg);
-		var takeProfitDecimal = takeProfitStrategy?.Result() ?? null;
-
-		var riskStrategy = await _riskStrategyFactory.GetRisk(riskPerTrade);
-		var risk = riskStrategy.Result();
-
-		var quantity =
-			Math.Round(
-				risk / Math.Abs(limitPrice - stoplossDecimal),
-				3); //todo: why is this 3?
-
-		var orderResult = await _exchangeRestClient.PlaceOrder(
-			symbol,
-			biasType,
-			quantity,
-			limitPrice,
-			setStoploss,
-			takeProfitDecimal,
-			stoplossDecimal
-		);
+		var orderResult = await _exchangeRestClient.PlaceOrder(trade);
 
 		if (orderResult.IsFailed)
 		{

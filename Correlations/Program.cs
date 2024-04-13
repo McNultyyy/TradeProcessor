@@ -103,64 +103,28 @@ foreach (var correlation in correlations)
 	}
 }
 
-
 var bestCorrelations = correlationDictionary
 	.Select(x =>
 	{
 		var bCor = x.Value
 			.OrderByDescending(y => y.Item2)
-			.Take(numberOfBestCorrelations)
+			.Take(5)
 			.ToList();
 
-		/*
 		var highestCorrelatedAsset = x.Value.MaxBy(y => y.Item2);
 
-		return new
-		{
-		    Asset1 = x.Key,
-		    Asset2 = highestCorrelatedAsset.Item1,
-
-		    Correlation = highestCorrelatedAsset.Item2
-		};
-		*/
-		return new KeyValuePair<string, List<(string, double)>>(x.Key, bCor);
-	});
+		return new {Asset1 = x.Key, Asset2 = highestCorrelatedAsset.Item1, Correlation = highestCorrelatedAsset.Item2};
+	})
+	.OrderByDescending(x => x.Asset1);
 
 
-var symbolsAverageCorrelation = correlationDictionary
-	.ToDictionary(
-		x => x.Key,
-		x =>  x.Value.Average(y => y.Item2))
-	.OrderByDescending(x => 1 - Math.Abs(x.Value)); // find the correlations closest to 0
 
-// Prints out the symbols average correlation
-var index = 1;
-foreach (var symbolAverageCorrelation in symbolsAverageCorrelation)
-{
-	Console.WriteLine($"{index}:\t{symbolAverageCorrelation.Key}:\t{symbolAverageCorrelation.Value}");
-	index++;
-}
+
+
+//PrintOutAssetCorrelationsAscending(correlationDictionary, numberOfBestCorrelations);
 
 Environment.Exit(0);
 
-// Prints out the most correlated assets
-foreach (var best in bestCorrelations)
-{
-	//whitelist symbols
-	if (true)
-	{
-		//whitelistedSymbols.Contains(best.Key)) {
-
-		Console.WriteLine($"{best.Key} Correlations:");
-
-		foreach (var cor in best.Value)
-		{
-			Console.WriteLine($"{cor.Item1}: {cor.Item2:F2}");
-		}
-
-		Console.WriteLine();
-	}
-}
 
 Console.ReadLine();
 
@@ -189,4 +153,45 @@ static double CalculateCorrelation(List<(DateTime, double)> data1, List<(DateTim
 	double den = Math.Sqrt((sum1sq - sum1 * sum1 / n) * (sum2sq - sum2 * sum2 / n));
 	if (den == 0) return 0; // handle divide by zero case
 	return num / den;
+}
+
+void PrintOutAssetCorrelationsAscending(Dictionary<string, List<(string, double)>> dictionary,
+	int numberOfBestCorrelations1)
+{
+	var keyValuePairs = dictionary
+		.Select(x =>
+		{
+			var bCor = x.Value
+				.OrderByDescending(y => y.Item2)
+				.Take(numberOfBestCorrelations1)
+				.ToList();
+
+			/*
+		var highestCorrelatedAsset = x.Value.MaxBy(y => y.Item2);
+
+		return new
+		{
+		    Asset1 = x.Key,
+		    Asset2 = highestCorrelatedAsset.Item1,
+
+		    Correlation = highestCorrelatedAsset.Item2
+		};
+		*/
+			return new KeyValuePair<string, List<(string, double)>>(x.Key, bCor);
+		});
+
+
+	var symbolsAverageCorrelation = dictionary
+		.ToDictionary(
+			x => x.Key,
+			x => x.Value.Average(y => y.Item2))
+		.OrderByDescending(x => 1 - Math.Abs(x.Value)); // find the correlations closest to 0
+
+// Prints out the symbols average correlation
+	var index = 1;
+	foreach (var symbolAverageCorrelation in symbolsAverageCorrelation)
+	{
+		Console.WriteLine($"{index}:\t{symbolAverageCorrelation.Key}:\t{symbolAverageCorrelation.Value}");
+		index++;
+	}
 }

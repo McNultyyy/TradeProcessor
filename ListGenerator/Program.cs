@@ -6,7 +6,7 @@ using ListGenerator.ListGenerators;
 
 Console.WriteLine("Starting ...");
 
-
+/*
 var smtGenerator = new CryptoPerpSMTTradingViewListGenerator();
 await smtGenerator.GenerateAsync();
 
@@ -14,18 +14,16 @@ var fundingRateGenerator = new CryptoFundingRateTradingViewListGenerator();
 await fundingRateGenerator.GenerateAsync();
 
 System.Environment.Exit(0);
+*/
 
 var tradingViewListOutputPath = "C:\\Users\\willi\\Projects\\TradeProcessor\\ListGenerator\\TradingViewLists";
 var tradingViewAlertsListOutputPath =
 	"C:\\Users\\willi\\Projects\\TradeProcessor\\ListGenerator\\TradingViewAlertsLists";
 
-var coinGeckoApi = new CoinGeckoRestClient();
-var g = await coinGeckoApi.Api.GetAssetPlatformsAsync();
-
 var symbolsListGenerators = new ISymbolsListGenerator[]
 {
 	//new BinanceSpotWithOkxPerpSymbolsListGenerator(),
-	new BinanceBTCSpotPairsWithOkxPerpSymbolsListGenerator(),
+	new OKxBTCSpotPairsListGenerator(),
 	//new OkxSpotOnlyTradingViewListGenerator(),
 	//new OkxSpotWithAvailablePerpTradingViewListGenerator()
 };

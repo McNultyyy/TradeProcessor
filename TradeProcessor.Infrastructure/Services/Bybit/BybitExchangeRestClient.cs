@@ -4,6 +4,7 @@ using FluentResults;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
+using TradeProcessor.Domain.Services;
 
 namespace TradeProcessor.Infrastructure.Services.Bybit
 {
@@ -16,6 +17,7 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 			_restClient = restClient;
 		}
 
+		/*
 		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price,
 			bool setStoploss,
 			decimal? takeProfit, decimal? stopLoss = null)
@@ -35,8 +37,15 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 
 			return Result.Fail(orderResult.Error.Message);
 		}
+		*/
 
-		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from, DateTime to)
+		public Task<Result> PlaceOrder(TradeTicket trade)
+		{
+			throw new NotImplementedException();
+		}
+
+		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from,
+			DateTime to)
 		{
 			var result = await _restClient.V5Api.ExchangeData.GetKlinesAsync(
 				Category.Linear,

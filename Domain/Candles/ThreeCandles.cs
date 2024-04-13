@@ -9,7 +9,7 @@
 
 			var twoCandles = new TwoCandles(Previous, Current);
 			if (twoCandles.TryFindImbalances(out var firstImbalances) && firstImbalances is not null)
-				foundImbalances.AddRange(firstImbalances!);
+				foundImbalances.AddRange(firstImbalances);
 
 			var previousTwoCandles = new TwoCandles(PreviousPrevious, Previous);
 			if (previousTwoCandles.TryFindImbalances(out var secondImbalances) && secondImbalances is not null)

@@ -25,10 +25,10 @@ await host.StartAsync();
 
 var restService = host.Services.GetRequiredService<IExchangeRestClient>();
 var pdFinder = host.Services.GetRequiredService<PDArrayFinder>();
-var stopLossStrategyFactory = host.Services.GetRequiredService<StoplossStrategyFactory>();
-var riskStrategyFactory = host.Services.GetRequiredService<RiskStrategyFactory>();
+var tradeParser = host.Services.GetRequiredService<TradeParser>();
 
-var symbols = (await restService.GetSymbols()).Value.Take(50);
+var symbols = (await restService.GetSymbols()).Value;
+//.Take(50);
 var interval = TimeSpan.FromDays(1);
 
 await restService.CancelAllOrders();
@@ -42,26 +42,15 @@ try
 		var closestPivots = new[]
 		{
 			pivots.FirstOrDefault(x => x.biasType is BiasType.Bearish),
-			pivots.FirstOrDefault(x => x.biasType is BiasType.Bullish)
+			//pivots.FirstOrDefault(x => x.biasType is BiasType.Bullish)
 		}.Where(x => x != default);
 
 		foreach (var pivot in closestPivots)
 		{
-			var stoplossStrategy =
-				await stopLossStrategyFactory.GetStoploss(symbol, pivot.biasType, "3atr", pivot.price, interval, null);
-			var stoplossDecimal = stoplossStrategy.Result();
+			var tradeTicket = await tradeParser.Parse(symbol, pivot.biasType, takeProfit: null, stoploss: "5%",
+				limitPrice: pivot.price, riskPerTrade: "20", interval: TimeSpan.FromDays(1), setStoploss: true);
 
-			var riskStrategy = await riskStrategyFactory.GetRisk("20");
-			var risk = riskStrategy.Result();
-
-			var quantity =
-				Math.Round(
-					risk / Math.Abs(pivot.price - stoplossDecimal),
-					3); //todo: why is this 3?
-
-			var result =
-				await restService.PlaceOrder(symbol, pivot.biasType, quantity, pivot.price, false, null,
-					stoplossDecimal);
+			var result = await restService.PlaceOrder(tradeTicket);
 		}
 	}
 }

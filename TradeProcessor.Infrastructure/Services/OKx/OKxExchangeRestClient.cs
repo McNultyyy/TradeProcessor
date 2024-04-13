@@ -10,6 +10,7 @@ using OKX.Api.Models.Trade;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
+using TradeProcessor.Domain.Services;
 
 namespace TradeProcessor.Infrastructure.Services.OKx
 {
@@ -24,28 +25,26 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			_logger = logger;
 		}
 
-		async Task<Result> IExchangeRestClient.PlaceOrder(Symbol symbol, BiasType bias, decimal quantity,
-			decimal limitPrice,
-			bool setStoploss,
-			decimal? takeProfit, decimal? stopLoss = null)
+		public async Task<Result> PlaceOrder(TradeTicket trade)
 		{
 			_logger.LogInformation("Placing {orderSide} limit for {symbol} at price {limitPrice}",
-				bias is BiasType.Bullish ? "Buy" : "Sell",
-				symbol,
-				limitPrice);
+				trade.BiasType is BiasType.Bullish ? "Buy" : "Sell",
+				trade.Symbol,
+				trade.Price);
 
-			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
+			var okxSymbol = OKxHelper.ToOkxSymbol(trade.Symbol);
 
 			var result =
 				await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
 			var contractValue = result.Data.First().ContractValue.Value;
 
-			if (quantity % contractValue != 0)
+			decimal quantity = 0;
+			if (trade.Quantity % contractValue != 0)
 			{
 				_logger.LogInformation("Quantity {quantity} must be a multiple of {contractValue}",
-					quantity, contractValue);
+					trade.Quantity, contractValue);
 
-				var newQuantity = quantity.RoundDownToMultiple(contractValue);
+				var newQuantity = trade.Quantity.RoundDownToMultiple(contractValue);
 				quantity = newQuantity / contractValue;
 
 				if (quantity == 0)
@@ -62,7 +61,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			}
 
 			decimal? tpOrderTriggerPrice = null;
-			if (takeProfit is not null)
+			if (trade.TakeProfit is not null)
 			{
 				/*
 				 * OKx has an awkward API and doesn't allow us to set the TP at the exact time of creating the trade.
@@ -70,45 +69,45 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 				 * we should place our limit order.
 				 */
 
-				var diff = Math.Abs(takeProfit.Value - limitPrice);
+				var diff = Math.Abs(trade.TakeProfit.Value - trade.Price);
 				var percentageOfDiff = diff * 0.30m;
 
-				tpOrderTriggerPrice = bias == BiasType.Bullish
-					? limitPrice + percentageOfDiff
-					: limitPrice - percentageOfDiff;
+				tpOrderTriggerPrice = trade.BiasType == BiasType.Bullish
+					? trade.Price + percentageOfDiff
+					: trade.Price - percentageOfDiff;
 				_logger.LogInformation("Set take profit trigger price to {takeProfitTriggerPrice}",
 					tpOrderTriggerPrice);
 			}
 
 			decimal? slOrderTriggerPrice = null;
-			if (stopLoss is not null && setStoploss)
+			if (trade.StoplossOptions.stoploss is not null && trade.StoplossOptions.setStoploss)
 			{
 				/*
 				 * Same as above
 				 */
 
-				var diff = Math.Abs(stopLoss.Value - limitPrice);
+				var diff = Math.Abs(trade.StoplossOptions.stoploss.Value - trade.Price);
 				var percentageOfDiff = diff * 0.30m;
 
-				slOrderTriggerPrice = bias == BiasType.Bullish
-					? limitPrice - percentageOfDiff
-					: limitPrice + percentageOfDiff;
+				slOrderTriggerPrice = trade.BiasType == BiasType.Bullish
+					? trade.Price - percentageOfDiff
+					: trade.Price + percentageOfDiff;
 				_logger.LogInformation("Set stop loss trigger price to {stopLossTriggerPrice}", slOrderTriggerPrice);
 			}
 
 			var orderResult = await _restClient.OrderBookTrading.Trade.PlaceOrderAsync(
 				instrumentId: okxSymbol,
 				tradeMode: OkxTradeMode.Cross,
-				orderSide: bias == BiasType.Bullish ? OkxOrderSide.Buy : OkxOrderSide.Sell,
+				orderSide: trade.BiasType == BiasType.Bullish ? OkxOrderSide.Buy : OkxOrderSide.Sell,
 				positionSide: OkxPositionSide.Net,
 				orderType: OkxOrderType.LimitOrder,
 				quantityType: OkxQuantityType.BaseCurrency,
 				size: quantity,
-				price: limitPrice,
-				tpOrdPx: takeProfit,
+				price: trade.Price,
+				tpOrdPx: trade.TakeProfit,
 				tpTriggerPx: tpOrderTriggerPrice,
-				slOrdPx: setStoploss ? stopLoss : null,
-				slTriggerPx: setStoploss ? slOrderTriggerPrice : null);
+				slOrdPx: trade.StoplossOptions.setStoploss ? trade.StoplossOptions.stoploss : null,
+				slTriggerPx: trade.StoplossOptions.setStoploss ? slOrderTriggerPrice : null);
 
 			if (orderResult.Success)
 			{
@@ -120,7 +119,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 			_logger.LogError(failureMessage);
 			return Result.Fail(failureMessage);
 		}
-
+		
 		public async Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from,
 			DateTime to)
 		{
@@ -202,8 +201,7 @@ namespace TradeProcessor.Infrastructure.Services.OKx
 		{
 			var okxSymbol = OKxHelper.ToOkxSymbol(symbol);
 
-			var result =
-				await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
+			var result = await _restClient.PublicData.GetInstrumentsAsync(OkxInstrumentType.Swap, instrumentId: okxSymbol);
 			if (!result.Success)
 			{
 				return Result.Fail(result.Error.Message);

@@ -37,7 +37,6 @@ namespace TradeProcessor.Infrastructure.Services.Bybit
 					});
 
 			// todo: review the while(true) if things get weird
-
 		}
 	}
 }

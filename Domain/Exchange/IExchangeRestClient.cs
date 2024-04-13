@@ -1,11 +1,12 @@
 ﻿using FluentResults;
 using TradeProcessor.Domain.Candles;
+using TradeProcessor.Domain.Services;
 
 namespace TradeProcessor.Domain.Exchange
 {
 	public interface IExchangeRestClient
 	{
-		public Task<Result> PlaceOrder(Symbol symbol, BiasType bias, decimal quantity, decimal price, bool setStoploss, decimal? takeProfit = null, decimal? stopLoss = null);
+		public Task<Result> PlaceOrder(TradeTicket trade);
 
 		public Task<Result<IEnumerable<Candle>>> GetCandles(Symbol symbol, TimeSpan interval, DateTime from, DateTime to);
 

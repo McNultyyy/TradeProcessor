@@ -15,7 +15,9 @@ public record FvgChaserRequest : IApiKeyProperty
 		BiasType bias,
 		int? numberOfActiveOrders = 0,
 		int? numberOfTrades = 0,
-		IEnumerable<GapType>? gaps = null)
+		IEnumerable<GapType>? gaps = null,
+		FvgEntryType entryType = FvgEntryType.Premium
+	)
 	{
 		Symbol = symbol;
 		Interval = interval;
@@ -27,6 +29,7 @@ public record FvgChaserRequest : IApiKeyProperty
 		NumberOfActiveOrders = numberOfActiveOrders;
 		NumberOfTrades = numberOfTrades;
 		Gaps = gaps ?? DefaultGapType;
+		EntryType = entryType;
 	}
 
 	public string ApiKey { get; set; }
@@ -40,4 +43,5 @@ public record FvgChaserRequest : IApiKeyProperty
 	public int? NumberOfActiveOrders { get; init; }
 	public int? NumberOfTrades { get; init; }
 	public IEnumerable<GapType>? Gaps { get; init; }
+	public FvgEntryType EntryType { get; init; }
 }
