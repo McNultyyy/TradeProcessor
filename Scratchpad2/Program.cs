@@ -7,10 +7,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TradeProcessor.Core;
 using TradeProcessor.Domain;
+using TradeProcessor.Domain.Candles;
 using TradeProcessor.Domain.Exchange;
 using TradeProcessor.Domain.Risk;
 using TradeProcessor.Domain.Services;
 using TradeProcessor.Domain.Stoploss;
+using TradeProcessor.Infrastructure.Services.Binance;
 
 var host = Host
 	.CreateDefaultBuilder()
@@ -26,6 +28,7 @@ await host.StartAsync();
 var restService = host.Services.GetRequiredService<IExchangeRestClient>();
 var pdFinder = host.Services.GetRequiredService<PDArrayFinder>();
 var tradeParser = host.Services.GetRequiredService<TradeParser>();
+var binanceClient = host.Services.GetRequiredService<BinanceExchangeRestClient>();
 
 var symbols = (await restService.GetSymbols()).Value;
 //.Take(50);
@@ -33,6 +36,8 @@ var interval = TimeSpan.FromDays(1);
 
 await restService.CancelAllOrders();
 
+
+/* place orders at pivots
 try
 {
 	foreach (var symbol in symbols)
@@ -57,6 +62,43 @@ try
 catch (Exception ex)
 {
 	var g = "";
+}
+*/
+
+var now = DateTime.UtcNow;
+var startDate = now - TimeSpan.FromDays(300);
+var timeframe = TimeSpan.FromDays(1);
+
+var binanceSymbols = (await binanceClient.GetSymbols()).Value;
+foreach (var binanceSymbol in binanceSymbols)
+{
+	var symbol = Symbol.Create("KSMUSDT").Value;
+
+	var symbolCandles = (await binanceClient.GetCandles(symbol, timeframe, startDate, now)).Value
+		.OrderBy(x => x.OpenDateTime)
+		.ToList();
+
+	var vibs = new List<Imbalance>();
+
+	for (int i = 2; i < symbolCandles.Count - 2; i++)
+	{
+		var (previousPrevious, previous, current) = (symbolCandles[i - 2], symbolCandles[i - 1], symbolCandles[i]);
+		var threeCandles = new ThreeCandles(previousPrevious, previous, current);
+
+		threeCandles.TryFindImbalances(out var imbalances);
+		if (imbalances is not null)
+		{
+			var vib = imbalances.FirstOrDefault(x => x.GapType == GapType.Volume);
+			if (vib is not null)
+				vibs.Add(vib);
+		}
+	}
+
+
+	var openVibs = vibs.Where(vib => symbolCandles.Any(candle =>
+			candle.IsAfter(vib) &&
+			candle.TradesThrough(vib)))
+		.ToList();
 }
 
 

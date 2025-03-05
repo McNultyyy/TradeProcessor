@@ -6,14 +6,20 @@ $externalUrl = "https://tradeprocessor-api.azurewebsites.net";
 $baseUrl = "$localUrl/trade?apiKey=$apiKey"  # Replace with your actual API endpoint
 
 
-# $csvData = Import-Csv $path 
+ $csvData = Import-Csv $path 
 
 $data = @(
-    'SOLUSDT', 'AVAXUSDT', 'LINKUSDT', 'BCHUSDT', 'BNBUSDT', 'DOGEUSDT',
-    'FTMUSDT', 'CFXUSDT', 'OPUSDT', 'APTUSDT', 'DGBUSDT', 'RVNUSDT', 'APEUSDT',
-        'CHZUSDT', 'HBARUSDT', 'DOTUSDT', 'RENUSDT'
+    'SOLUSDT',
+    'AVAXUSDT',
+    'JSTUSDT',
+    'BONKUSDT',
+    'AUCTIONUSDT',
+    'BCHUSDT',
+    'BANDUSDT',
+    'API3USDT',
+    'WOOUSDT',
+    'YGGUSDT'
 )
-
 
 foreach ($line in $data) {
 
@@ -24,11 +30,11 @@ foreach ($line in $data) {
         apiKey       = "123";
         symbol       = "$symbol";
         interval     = "1H";
-        riskPerTrade = "20";
+        riskPerTrade = "10";
         stoploss     = "fvg high";
-        setStoploss  =  $true;
-        #takeProfit   = "1R";
-        bias         = "Bearish";
+        setStoploss  =  $false;
+        takeProfit   = "3R";
+        bias         = "Bullish";
     } | ConvertTo-Json
     
     Write-Host "Sending $($body.bias) request for '$symbol' ..."

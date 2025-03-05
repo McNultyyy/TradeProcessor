@@ -4,7 +4,6 @@
 	{
 		public bool TryFindImbalances(out IEnumerable<Imbalance>? imbalances)
 		{
-
 			var foundImbalances = new List<Imbalance>();
 
 			var twoCandles = new TwoCandles(Previous, Current);
@@ -37,7 +36,8 @@
 				PreviousPrevious.Low > Current.High
 			)
 			{
-				imbalance = new Imbalance(PreviousPrevious.Low, Current.High, BiasType.Bearish, GapType.Price);
+				imbalance = new Imbalance(PreviousPrevious.Low, Current.High, BiasType.Bearish, GapType.Price,
+					PreviousPrevious.CloseDateTime, Current.OpenDateTime);
 				return true;
 			}
 
@@ -46,14 +46,13 @@
 				PreviousPrevious.High < Current.Low
 			)
 			{
-				imbalance = new Imbalance(Current.Low, PreviousPrevious.High, BiasType.Bullish, GapType.Price);
+				imbalance = new Imbalance(Current.Low, PreviousPrevious.High, BiasType.Bullish, GapType.Price,
+					PreviousPrevious.CloseDateTime, Current.OpenDateTime);
 				return true;
 			}
 
 			imbalance = null;
 			return false;
 		}
-
-
 	}
 }

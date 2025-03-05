@@ -23,7 +23,8 @@ var tradingViewAlertsListOutputPath =
 var symbolsListGenerators = new ISymbolsListGenerator[]
 {
 	//new BinanceSpotWithOkxPerpSymbolsListGenerator(),
-	new OKxBTCSpotPairsListGenerator(),
+	//new OKxBTCSpotPairsListGenerator(),
+	//new OkxPerpCategoriesTradingViewListGenerator(),
 	//new OkxSpotOnlyTradingViewListGenerator(),
 	//new OkxSpotWithAvailablePerpTradingViewListGenerator()
 };

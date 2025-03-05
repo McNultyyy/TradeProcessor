@@ -1,6 +1,7 @@
 ﻿using ApiSharp.Models;
 using ApiSharp.Throttling;
 using ApiSharp.Throttling.Interfaces;
+using Binance.Net;
 using Bybit.Net;
 using CryptoExchange.Net.Authentication;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,7 @@ using OKX.Api;
 using OKX.Api.Authentication;
 using TradeProcessor.Domain;
 using TradeProcessor.Domain.Exchange;
+using TradeProcessor.Infrastructure.Services.Binance;
 using TradeProcessor.Infrastructure.Services.Bybit;
 using TradeProcessor.Infrastructure.Services.OKx;
 
@@ -22,6 +24,7 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 		{
 			services.AddBybit(configuration);
 			services.AddOkx(configuration);
+			services.AddBinance(configuration);
 
 			switch (configuration["Exchange"])
 			{
@@ -37,7 +40,9 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 
 				default:
 					throw new ArgumentOutOfRangeException();
-			};
+			}
+
+			services.AddSingleton<BinanceExchangeRestClient>();
 
 			return services;
 		}
@@ -60,6 +65,13 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 			return services;
 		}
 
+		private static IServiceCollection AddBinance(this IServiceCollection services, IConfiguration configuration)
+		{
+			services.AddBinance(options => { }, options => { });
+
+			return services;
+		}
+
 		private static IServiceCollection AddOkx(this IServiceCollection services, IConfiguration configuration)
 		{
 			var (key, secret, passphrase) = configuration
@@ -75,10 +87,7 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 			{
 				var okxRestClient = new OKXRestApiClient(
 					sp.GetRequiredService<ILoggerFactory>().CreateLogger<OKXRestApiClient>(),
-					new OKXRestApiClientOptions()
-					{
-						ApiCredentials = okxApiCredentials
-					});
+					new OKXRestApiClientOptions() {ApiCredentials = okxApiCredentials});
 
 				return okxRestClient;
 			});
@@ -87,10 +96,7 @@ namespace TradeProcessor.Infrastructure.DependencyInjection
 			{
 				var client = new OKXWebSocketApiClient(
 					sp.GetRequiredService<ILoggerFactory>().CreateLogger<OKXWebSocketApiClient>(),
-					new OKXWebSocketApiClientOptions()
-					{
-						ApiCredentials = okxApiCredentials
-					});
+					new OKXWebSocketApiClientOptions() {ApiCredentials = okxApiCredentials});
 
 				return client;
 			});

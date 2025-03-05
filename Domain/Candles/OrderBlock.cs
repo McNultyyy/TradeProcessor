@@ -1,5 +1,13 @@
 ﻿namespace TradeProcessor.Domain.Candles
 {
+	public record MitigationBlock(
+		ICandle LiquidityCandle,
+		TwoCandles EngulfingCandle)
+	{
+		public decimal UnmitigatedLevel =
+			EngulfingCandle.IsBullishEngulfing() ? LiquidityCandle.Low : LiquidityCandle.High;
+	}
+
 	public record OrderBlock(
 		ICandle LiquidityCandle,
 		ICandle LiquidityTakingCandle,

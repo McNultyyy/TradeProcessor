@@ -19,8 +19,8 @@ public class TradeParser
 	}
 
 	public async Task<TradeTicket> Parse(Symbol symbol, BiasType biasType, string? takeProfit, string? stoploss,
-		decimal limitPrice, string riskPerTrade, TimeSpan interval, bool setStoploss,
-		(decimal low, decimal high) fvg = default)
+		decimal limitPrice, string riskPerTrade, bool setStoploss,
+		(decimal low, decimal high) fvg = default, TimeSpan interval = default)
 	{
 		var stoplossStrategy =
 			await _stoplossStrategyFactory.GetStoploss(symbol, biasType, stoploss, limitPrice, interval, fvg);

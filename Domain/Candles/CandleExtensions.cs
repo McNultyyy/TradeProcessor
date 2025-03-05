@@ -58,9 +58,28 @@ namespace TradeProcessor.Domain.Candles
 			return candle.OpenDateTime > otherCandle.OpenDateTime;
 		}
 
+		public static bool IsAfter(this ICandle candle, Imbalance imbalance)
+		{
+			return candle.OpenDateTime > imbalance.OpenDateTime;
+		}
+
 		public static bool HasLowerLowThan(this ICandle candle, ICandle otherCandle)
 		{
 			return candle.Low < otherCandle.Low;
+		}
+
+		public static bool TradesThrough(this ICandle candle, Imbalance imbalance)
+		{
+			if (candle.IsBearishCandle())
+			{
+				return
+					candle.Open > imbalance.High &&
+					candle.Close < imbalance.Low;
+			}
+
+			return
+				candle.Open < imbalance.High &&
+				candle.Close > imbalance.Low;
 		}
 	}
 }

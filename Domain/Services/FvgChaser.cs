@@ -163,8 +163,7 @@ public class FvgChaser
 		_logger.LogInformation("Setting limit order at: {limitPrice}", limitPrice);
 
 		var trade = await _tradeParser.Parse(symbol, biasType, takeProfit, stoploss, limitPrice, riskPerTrade,
-			intervalTimeSpan,
-			setStoploss, fvg);
+			setStoploss, fvg, intervalTimeSpan);
 
 		var orderResult = await _exchangeRestClient.PlaceOrder(trade);
 

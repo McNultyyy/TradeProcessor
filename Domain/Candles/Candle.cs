@@ -8,5 +8,4 @@ public record Candle(decimal Open, decimal High, decimal Low, decimal Close, Dat
 
 	public Candle(int Open, int High, int Low, int Close, DateTime OpenDateTime = default, DateTime CloseDateTime = default)
 		: this((decimal)Open, (decimal)High, (decimal)Low, (decimal)Close, OpenDateTime) { }
-
 }
